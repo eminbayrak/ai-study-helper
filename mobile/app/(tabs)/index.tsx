@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Share,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -229,7 +230,7 @@ export default function HomeScreen() {
   };
 
   // Add PDF handler
-  const handlePdfExtract = async (file: File | DocumentPicker.DocumentAsset) => {
+  const handlePdfExtract = async (file: File | DocumentPicker.DocumentPickerAsset) => {
     try {
       setIsImageProcessing(true);
       const formData = new FormData();
@@ -334,10 +335,10 @@ export default function HomeScreen() {
           });
           
           // Share the PDF file
-          await FileSystem.shareAsync(fileUri, {
-            mimeType: 'application/pdf',
-            dialogTitle: 'Save PDF',
-            UTI: 'com.adobe.pdf'
+          await Share.share({
+            url: fileUri,
+            title: 'Save PDF',
+            message: 'Study Notes PDF'  // Required for Android
           });
         };
         fr.readAsDataURL(data);
