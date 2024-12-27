@@ -1,21 +1,44 @@
-export default {
-  expo: {
-    // ... other config
-    userInterfaceStyle: 'automatic',
-    web: {
-      favicon: "./assets/favicon.png",
-      permissions: {
-        camera: true,
-        mediaLibrary: true,
-      }
-    },
-    plugins: [
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "The app accesses your photos to let you share them with your friends."
-        }
-      ]
-    ]
+import { ExpoConfig, ConfigContext } from 'expo/config';
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: 'pati',
+  slug: 'pati',
+  version: '1.0.0',
+  orientation: 'portrait',
+  icon: './assets/images/icon.png',
+  scheme: 'myapp',
+  userInterfaceStyle: 'automatic',
+  newArchEnabled: true,
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: 'com.anonymous.pati'
   },
-}; 
+  android: {
+    package: 'com.anonymous.pati',
+    adaptiveIcon: {
+      foregroundImage: './assets/images/adaptive-icon.png',
+      backgroundColor: '#ffffff'
+    }
+  },
+  web: {
+    bundler: 'metro',
+    output: 'static',
+    favicon: './assets/images/favicon.png'
+  },
+  plugins: [
+    'expo-router',
+    [
+      'expo-splash-screen',
+      {
+        image: './assets/images/splash-icon.png',
+        imageWidth: 200,
+        resizeMode: 'contain',
+        backgroundColor: '#ffffff'
+      }
+    ]
+  ],
+  experiments: {
+    typedRoutes: true
+  }
+}); 

@@ -1,6 +1,18 @@
+import { Platform } from 'react-native';
+
+const getApiUrl = () => {
+  if (Platform.OS === 'web') {
+    return 'http://localhost:8000/api';
+  } else if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:8000/api';
+  } else {
+    return 'http://localhost:8000/api';  // default for iOS and others
+  }
+};
+
 const ENV = {
   development: {
-    API_URL: 'http://127.0.0.1:8000/api',
+    API_URL: getApiUrl(),
   },
   production: {
     API_URL: 'https://your-production-api.com/api',

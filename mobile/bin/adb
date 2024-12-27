@@ -1,0 +1,2 @@
+#!/bin/bash
+/mnt/c/Users/Lay/AppData/Local/Android/Sdk/platform-tools/adb.exe "$@"

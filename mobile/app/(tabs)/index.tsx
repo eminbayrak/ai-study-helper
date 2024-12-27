@@ -85,14 +85,13 @@ export default function HomeScreen() {
             handleExtractText(result.assets[0].uri);
           }
         } else {
-          // Use document picker for PDFs on mobile
           const result = await DocumentPicker.getDocumentAsync({
             type: 'application/pdf',
             copyToCacheDirectory: true,
           });
 
           if (!result.canceled) {
-            handlePdfExtract(result);
+            handlePdfExtract(result.assets[0]);
           }
         }
       }
@@ -230,41 +229,59 @@ export default function HomeScreen() {
   };
 
   // Add PDF handler
-  const handlePdfExtract = async (file: File | DocumentPicker.DocumentPickerResult) => {
-    setIsImageProcessing(true);
-    setInput('');
-    setResponse(null);
-
+  const handlePdfExtract = async (file: File | DocumentPicker.DocumentAsset) => {
     try {
+      setIsImageProcessing(true);
       const formData = new FormData();
-      
+
       if (file instanceof File) {  // Web
         formData.append('file', file);
-      } else if (!file.canceled) {  // Mobile
+      } else {  // Mobile
         formData.append('file', {
-          uri: file.assets[0].uri,
-          name: file.assets[0].name,
+          uri: Platform.OS === 'android' ? file.uri : file.uri.replace('file://', ''),
           type: 'application/pdf',
+          name: file.name
         } as any);
       }
 
-      const res = await fetch(`${ENV.API_URL}/extract-pdf`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      const response = await fetch(`${ENV.API_URL}/extract-pdf`, {
         method: 'POST',
         body: formData,
         headers: {
           'Accept': 'application/json',
         },
-        mode: 'cors',
-        credentials: 'omit',
+        signal: controller.signal,
+        // Remove Content-Type header for web FormData
+        ...(Platform.OS !== 'web' && {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          }
+        })
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      clearTimeout(timeoutId);
 
-      const data = await res.json();
-      setInput(data.extracted_text);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Failed to extract text: ${errorText}`);
+      }
+
+      const data = await response.json();
+      if (!data.extracted_text && !data.text) {
+        throw new Error('No text extracted from PDF');
+      }
+      
+      setInput(data.extracted_text || data.text);
     } catch (error) {
-      console.error('PDF extraction error:', error);
-      Alert.alert('Error', 'Unable to extract text from PDF. Please try again.');
+      console.error('PDF extract error:', error);
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to extract text from PDF. Please try again.'
+      );
     } finally {
       setIsImageProcessing(false);
     }
@@ -279,9 +296,7 @@ export default function HomeScreen() {
     try {
       // Format the text based on response type
       const formattedText = response?.type === 'questions' 
-        ? (response.data as string[])
-            .map((q, i) => `${i + 1}. ${q}`)
-            .join('\n\n')  // Add double line breaks between questions
+        ? (response.data as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n\n')
         : response?.data as string;
 
       const res = await fetch(`${ENV.API_URL}/download-pdf`, {
@@ -297,16 +312,36 @@ export default function HomeScreen() {
 
       if (!res.ok) throw new Error('Failed to generate PDF');
 
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'study_notes.pdf';
-      document.body.appendChild(a);
-      a.click();
-      
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      if (Platform.OS === 'web') {
+        // Web download implementation
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'study_notes.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        // Mobile download implementation
+        const data = await res.blob();
+        const fr = new FileReader();
+        fr.onload = async () => {
+          const fileUri = `${FileSystem.documentDirectory}study_notes.pdf`;
+          await FileSystem.writeAsStringAsync(fileUri, fr.result as string, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          
+          // Share the PDF file
+          await FileSystem.shareAsync(fileUri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Save PDF',
+            UTI: 'com.adobe.pdf'
+          });
+        };
+        fr.readAsDataURL(data);
+      }
     } catch (error) {
       console.error('PDF download error:', error);
       Alert.alert('Error', 'Unable to download PDF. Please try again.');
@@ -350,6 +385,7 @@ export default function HomeScreen() {
       shadowOpacity: 0.1,
       shadowRadius: 8,
       elevation: 3,
+      maxHeight: 200,
     },
     inputIcon: {
       marginRight: 12,
@@ -359,9 +395,12 @@ export default function HomeScreen() {
     input: {
       flex: 1,
       minHeight: 120,
+      maxHeight: 200,
       color: colors.text,
       fontSize: 16,
       textAlignVertical: 'top',
+      paddingTop: 0,
+      paddingBottom: 0,
     },
     buttonContainer: {
       flexDirection: 'row',
@@ -627,8 +666,10 @@ export default function HomeScreen() {
           placeholder="Enter or extracted text will appear here"
           placeholderTextColor={colors.textSecondary}
           multiline
+          scrollEnabled={true}
           value={input}
           onChangeText={handleInputChange}
+          textAlignVertical="top"
         />
       </View>
 
