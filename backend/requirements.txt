@@ -1,0 +1,10 @@
+fastapi
+python-multipart
+pillow
+opencv-python
+numpy
+pytesseract
+python-dotenv
+transformers
+torch
+sentencepiece 

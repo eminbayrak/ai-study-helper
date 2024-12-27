@@ -1,0 +1,1 @@
+# ai-study-helper node_modules -type f -name README.md -exec grep -l uvicorn main:app --reload {} ;
