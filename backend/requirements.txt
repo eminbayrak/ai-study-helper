@@ -7,4 +7,7 @@ pytesseract
 python-dotenv
 transformers
 torch
-sentencepiece 
+sentencepiece
+uvicorn
+pydantic
+pydantic-settings 

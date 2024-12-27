@@ -1,119 +1,104 @@
-from transformers import T5ForConditionalGeneration, T5Tokenizer
-import torch
-from typing import Dict, List
+from transformers import pipeline
 import re
+from typing import Dict, List
 
 class QuestionGeneratorService:
     def __init__(self):
-        # Initialize T5 model and tokenizer
-        self.model_name = "t5-large"  # Using larger model for better quality
-        self.tokenizer = T5Tokenizer.from_pretrained(self.model_name)
-        self.model = T5ForConditionalGeneration.from_pretrained(self.model_name)
-        
-        # Use GPU if available
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model.to(self.device)
+        # Initialize the question generation pipeline
+        self.generator = pipeline("text2text-generation", model="google/flan-t5-base")
 
-    def _prepare_input_text(self, text: str) -> str:
-        """Clean and prepare text for question generation"""
+    def _clean_text(self, text: str) -> str:
         # Remove extra whitespace and normalize text
-        text = re.sub(r'\s+', ' ', text).strip()
-        # Prefix for T5 to indicate question generation task
-        return f"generate questions: {text}"
+        return re.sub(r'\s+', ' ', text).strip()
+
+    def _generate_prompts(self, text: str) -> List[str]:
+        # Create different prompts based on text content
+        prompts = [
+            f"Generate a question about: {text}",
+            f"What are the key points in: {text}",
+            f"Ask a question to test understanding of: {text}",
+            f"What would you ask to verify comprehension of: {text}",
+            f"Create a technical question about: {text}"
+        ]
+        return prompts
 
     def _extract_key_terms(self, text: str) -> List[str]:
-        """Extract important terms from the text"""
+        # Extract technical terms and important concepts
         terms = set()
         
-        # Match technical terms (capitalized words and phrases)
-        technical_terms = re.findall(r'\b[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*\b', text)
-        
-        # Match terms in parentheses
-        parenthetical_terms = re.findall(r'\(([^)]+)\)', text)
-        
-        # Match terms after colons or defined terms
-        defined_terms = re.findall(r'([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*)\s*:', text)
-        
-        # Add all found terms
+        # Match code-like terms
+        code_terms = re.findall(r'["\']([^"\']+)["\']|`([^`]+)`|\{([^\}]+)\}', text)
+        for matches in code_terms:
+            terms.update(match for match in matches if match)
+            
+        # Match technical terms (capitalized words, numbers with units)
+        technical_terms = re.findall(r'\b[A-Z][a-zA-Z]*\b|\b\d+(?:\.\d+)?(?:\s*[a-zA-Z]+)?\b', text)
         terms.update(technical_terms)
-        terms.update(t.strip() for t in parenthetical_terms)
-        terms.update(defined_terms)
         
-        return sorted(list(terms))
+        return list(terms)
 
-    def _detect_subject(self, text: str) -> str:
-        """Detect the subject matter of the text"""
-        text_lower = text.lower()
-        
-        subject_keywords = {
-            "quantum_computing": ["quantum", "qubit", "superposition", "entanglement"],
-            "programming": ["code", "function", "algorithm", "programming"],
-            "mathematics": ["theorem", "equation", "calculation", "math"],
-            "physics": ["force", "energy", "particle", "physics"],
-            "language": ["grammar", "vocabulary", "pronunciation", "verb"]
+    def _detect_text_type(self, text: str) -> str:
+        # Detect the type of text
+        patterns = {
+            'code': r'[\{\}()\[\];]|function|class|var|const|let',
+            'technical': r'endpoint|api|database|algorithm|function',
+            'mathematical': r'\b\d+(?:\.\d+)?\b|average|count|length',
         }
         
-        # Count matches for each subject
         matches = {
-            subject: sum(1 for kw in keywords if kw in text_lower)
-            for subject, keywords in subject_keywords.items()
+            category: len(re.findall(pattern, text.lower()))
+            for category, pattern in patterns.items()
         }
         
-        # Return the subject with the most matches, or "general" if no matches
-        max_matches = max(matches.values(), default=0)
+        max_matches = max(matches.values())
         if max_matches > 0:
             return max(matches.items(), key=lambda x: x[1])[0]
         return "general"
 
     async def generate_questions(self, text: str) -> Dict:
         try:
-            # Prepare input text
-            input_text = self._prepare_input_text(text)
+            # Clean and prepare text
+            cleaned_text = self._clean_text(text)
+            if not cleaned_text:
+                return {
+                    "questions": [],
+                    "note_type": "general",
+                    "key_terms": None
+                }
+
+            # Generate prompts
+            prompts = self._generate_prompts(cleaned_text)
             
-            # Tokenize input
-            inputs = self.tokenizer(input_text, return_tensors="pt", max_length=1024, truncation=True)
-            inputs = inputs.to(self.device)
-            
-            # Generate multiple questions
-            outputs = self.model.generate(
-                inputs["input_ids"],
-                max_length=64,
-                min_length=20,
-                num_return_sequences=7,  # Generate extra for filtering
-                num_beams=5,
-                no_repeat_ngram_size=2,
-                early_stopping=True,
-                temperature=0.7,
-                top_k=50,
-                top_p=0.95,
-                do_sample=True
-            )
-            
-            # Decode and clean up questions
+            # Generate questions
             questions = []
-            for output in outputs:
-                question = self.tokenizer.decode(output, skip_special_tokens=True)
-                # Clean up and format question
-                question = question.strip()
-                if not question.endswith('?'):
-                    question += '?'
-                if question not in questions:  # Avoid duplicates
+            for prompt in prompts[:3]:  # Limit to 3 questions for performance
+                response = self.generator(
+                    prompt,
+                    max_length=64,
+                    num_return_sequences=1,
+                    do_sample=True,
+                    temperature=0.7
+                )
+                question = response[0]['generated_text'].strip()
+                if question and question not in questions and question.endswith('?'):
                     questions.append(question)
-            
-            # Filter for best questions
-            questions = [q for q in questions if len(q.split()) >= 5]  # Ensure meaningful length
-            questions = sorted(questions, key=len)[:5]  # Get top 5 questions
-            
-            # Extract key terms and detect subject
-            key_terms = self._extract_key_terms(text)
-            subject = self._detect_subject(text)
-            
+
+            # Extract key terms and detect type
+            key_terms = self._extract_key_terms(cleaned_text)
+            text_type = self._detect_text_type(cleaned_text)
+
+            # Add specific questions based on text type
+            if text_type == 'technical':
+                questions.append("How would you implement this solution?")
+            elif text_type == 'mathematical':
+                questions.append("Can you explain the calculation process?")
+
             return {
                 "questions": questions,
-                "note_type": subject,
-                "key_terms": key_terms
+                "note_type": text_type,
+                "key_terms": key_terms if key_terms else None
             }
-            
+
         except Exception as e:
             print(f"Error generating questions: {str(e)}")
             return {

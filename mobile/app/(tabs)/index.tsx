@@ -39,18 +39,37 @@ export default function HomeScreen() {
   // Image picker function
   const pickImage = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1,
-      });
+      // Check if running on web
+      if (Platform.OS === 'web') {
+        // Create an input element
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async (e: any) => {
+          const file = e.target.files[0];
+          if (file) {
+            const imageUri = URL.createObjectURL(file);
+            setImage(imageUri);
+            handleExtractText(imageUri);
+          }
+        };
+        // Trigger click
+        input.click();
+      } else {
+        // Mobile image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
 
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-        // Auto-trigger text extraction when image is picked
-        handleExtractText(result.assets[0].uri);
+        if (!result.canceled) {
+          setImage(result.assets[0].uri);
+          handleExtractText(result.assets[0].uri);
+        }
       }
     } catch (error) {
+      console.error('Image picker error:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
@@ -58,11 +77,10 @@ export default function HomeScreen() {
   // API call for OCR and text extraction
   const handleExtractText = async (imageUri: string) => {
     setIsImageProcessing(true);
-    setInput(''); // Clear previous input
-    setResponse(null); // Clear previous response
+    setInput('');
+    setResponse(null);
 
     try {
-      // Create form data
       const formData = new FormData();
 
       if (Platform.OS === 'web') {
@@ -87,6 +105,8 @@ export default function HomeScreen() {
         headers: {
           'Accept': 'application/json',
         },
+        mode: 'cors',
+        credentials: 'omit',
       });
 
       if (!res.ok) {
@@ -418,7 +438,11 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ) : (
           <View style={styles.imageContainer}>
-            <Image source={{ uri: image }} style={styles.previewImage} />
+            <Image 
+              source={{ uri: image }} 
+              resizeMode="cover"
+              style={[styles.previewImage, { height: 200 }]}
+            />
             {isImageProcessing ? (
               <View style={styles.processingOverlay}>
                 <ActivityIndicator color={colors.primary} size="large" />

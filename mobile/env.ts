@@ -1,12 +1,12 @@
 const ENV = {
   development: {
-    API_URL: 'http://127.0.0.1:8000',
+    API_URL: 'http://127.0.0.1:8000/api',
   },
   production: {
-    API_URL: 'https://your-production-api.com', // Change this when you deploy
+    API_URL: 'https://your-production-api.com/api',
   },
   staging: {
-    API_URL: 'https://your-staging-api.com', // Change this for staging
+    API_URL: 'https://your-staging-api.com/api',
   }
 };
 
