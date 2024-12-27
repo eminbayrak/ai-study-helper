@@ -11,3 +11,5 @@ sentencepiece
 uvicorn
 pydantic
 pydantic-settings 
+PyPDF2==3.0.1 
+reportlab

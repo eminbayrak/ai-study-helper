@@ -1,11 +1,17 @@
 from transformers import pipeline
 import re
 from typing import Dict, List
+import torch
 
 class QuestionGeneratorService:
     def __init__(self):
         # Initialize the question generation pipeline
-        self.generator = pipeline("text2text-generation", model="google/flan-t5-base")
+        self.generator = pipeline(
+            "text2text-generation",
+            model="google/flan-t5-base",
+            max_length=128,
+            device="cuda" if torch.cuda.is_available() else "cpu"
+        )
 
     def _clean_text(self, text: str) -> str:
         # Remove extra whitespace and normalize text
@@ -60,34 +66,30 @@ class QuestionGeneratorService:
             # Clean and prepare text
             cleaned_text = self._clean_text(text)
             if not cleaned_text:
-                return {
-                    "questions": [],
-                    "note_type": "general",
-                    "key_terms": None
-                }
+                return self._empty_response()
 
-            # Generate prompts
+            # Generate all prompts at once
             prompts = self._generate_prompts(cleaned_text)
             
-            # Generate questions
-            questions = []
-            for prompt in prompts[:3]:  # Limit to 3 questions for performance
-                response = self.generator(
-                    prompt,
-                    max_length=64,
-                    num_return_sequences=1,
-                    do_sample=True,
-                    temperature=0.7
-                )
-                question = response[0]['generated_text'].strip()
-                if question and question not in questions and question.endswith('?'):
-                    questions.append(question)
+            # Batch process prompts
+            responses = self.generator(
+                prompts[:3],
+                max_length=128,
+                num_return_sequences=1,
+                do_sample=True,
+                temperature=0.7,
+                batch_size=3
+            )
 
-            # Extract key terms and detect type
-            key_terms = self._extract_key_terms(cleaned_text)
+            # Extract questions
+            questions = [
+                response['generated_text'].strip()
+                for response in responses
+                if response['generated_text'].strip().endswith('?')
+            ]
+
+            # Add type-specific questions
             text_type = self._detect_text_type(cleaned_text)
-
-            # Add specific questions based on text type
             if text_type == 'technical':
                 questions.append("How would you implement this solution?")
             elif text_type == 'mathematical':
@@ -96,13 +98,16 @@ class QuestionGeneratorService:
             return {
                 "questions": questions,
                 "note_type": text_type,
-                "key_terms": key_terms if key_terms else None
+                "key_terms": self._extract_key_terms(cleaned_text)
             }
 
         except Exception as e:
             print(f"Error generating questions: {str(e)}")
-            return {
-                "questions": [],
-                "note_type": "general",
-                "key_terms": None
-            } 
+            return self._empty_response()
+
+    def _empty_response(self):
+        return {
+            "questions": [],
+            "note_type": "general",
+            "key_terms": None
+        } 
