@@ -22,11 +22,16 @@ import { useThemeColor } from '../../hooks/useThemeColor';
 import * as DocumentPicker from 'expo-document-picker';
 
 type ResponseType = {
-  type: 'summary' | 'questions';
-  data: string | string[];
-  noteType?: string;
-  key_terms?: string[];
-  foreignTerms?: string[];
+  summary?: {
+    data: string;
+    noteType: string;
+    key_terms?: string[];
+  };
+  questions?: {
+    data: string[];
+    noteType: string;
+    key_terms?: string[];
+  };
 };
 
 type FileType = 'image' | 'pdf';
@@ -41,11 +46,13 @@ export default function HomeScreen() {
   const { colors } = useThemeColor();
   const [input, setInput] = useState<string>('');
   const [image, setImage] = useState<string | null>(null);
-  const [response, setResponse] = useState<ResponseType | null>(null);
+  const [response, setResponse] = useState<ResponseType>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isImageProcessing, setIsImageProcessing] = useState<boolean>(false);
   const [loadingAction, setLoadingAction] = useState<'summary' | 'questions' | null>(null);
   const [fileType, setFileType] = useState<FileType>('image');
+  const [activeTab, setActiveTab] = useState<'summary' | 'questions' | null>(null);
+  const [showResults, setShowResults] = useState(false);
 
   // Image picker function
   const pickFile = async (type: FileType = 'image') => {
@@ -56,7 +63,7 @@ export default function HomeScreen() {
         input.accept = type === 'image' ? 'image/*' : 'application/pdf';
         
         input.onchange = async (e: any) => {
-          const file = e.target.files[0];
+          const file = e.target.files?.[0];
           if (!file) return;
 
           if (!checkFileSize(file)) {
@@ -67,23 +74,23 @@ export default function HomeScreen() {
           if (type === 'image') {
             const imageUri = URL.createObjectURL(file);
             setImage(imageUri);
-            handleExtractText(imageUri);
+            await handleExtractText(imageUri);
           } else {
-            handlePdfExtract(file);
+            await handlePdfExtract(file);
           }
         };
         input.click();
       } else {
         if (type === 'image') {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 1,
+          });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-            handleExtractText(result.assets[0].uri);
+          if (!result.canceled && result.assets[0]) {
+            setImage(result.assets[0].uri);
+            await handleExtractText(result.assets[0].uri);
           }
         } else {
           const result = await DocumentPicker.getDocumentAsync({
@@ -91,8 +98,8 @@ export default function HomeScreen() {
             copyToCacheDirectory: true,
           });
 
-          if (!result.canceled) {
-            handlePdfExtract(result.assets[0]);
+          if (!result.canceled && result.assets[0]) {
+            await handlePdfExtract(result.assets[0]);
           }
         }
       }
@@ -106,7 +113,7 @@ export default function HomeScreen() {
   const handleExtractText = async (imageUri: string) => {
     setIsImageProcessing(true);
     setInput('');
-    setResponse(null);
+    setResponse({});
 
     try {
       const formData = new FormData();
@@ -133,8 +140,6 @@ export default function HomeScreen() {
         headers: {
           'Accept': 'application/json',
         },
-        mode: 'cors',
-        credentials: 'omit',
       });
 
       if (!res.ok) {
@@ -158,8 +163,12 @@ export default function HomeScreen() {
       return;
     }
 
+    if (response.summary) {
+      setActiveTab('summary');
+      return;
+    }
+
     setLoadingAction('summary');
-    setResponse(null);
 
     try {
       const res = await fetch(`${ENV.API_URL}/summarize`, {
@@ -175,16 +184,20 @@ export default function HomeScreen() {
       }
 
       const data = await res.json();
-      setResponse({ 
-        type: 'summary', 
-        data: data.summary,
-        noteType: data.note_type,
-        key_terms: data.key_terms 
-      });
+      setResponse(prev => ({
+        ...prev,
+        summary: {
+          data: data.summary,
+          noteType: data.note_type,
+          key_terms: data.key_terms
+        }
+      }));
     } catch (error) {
       Alert.alert('Error', 'Unable to process text. Please try again.');
     } finally {
       setLoadingAction(null);
+      setActiveTab('summary');
+      setShowResults(true);
     }
   };
 
@@ -195,8 +208,12 @@ export default function HomeScreen() {
       return;
     }
 
+    if (response.questions) {
+      setActiveTab('questions');
+      return;
+    }
+
     setLoadingAction('questions');
-    setResponse(null);
 
     try {
       const res = await fetch(`${ENV.API_URL}/generate-questions`, {
@@ -212,20 +229,21 @@ export default function HomeScreen() {
       }
 
       const data = await res.json();
-      console.log('Question generation response:', data); // Debug log
-
-      setResponse({
-        type: 'questions',
-        data: data.questions,
-        noteType: data.note_type,
-        key_terms: data.key_terms, // Ensure this matches the API response
-        foreignTerms: [] // Add this to match the type
-      });
+      setResponse(prev => ({
+        ...prev,
+        questions: {
+          data: data.questions,
+          noteType: data.note_type,
+          key_terms: data.key_terms
+        }
+      }));
     } catch (error) {
       console.error('Question generation error:', error);
       Alert.alert('Error', 'Unable to generate questions. Please try again.');
     } finally {
       setLoadingAction(null);
+      setActiveTab('questions');
+      setShowResults(true);
     }
   };
 
@@ -251,16 +269,13 @@ export default function HomeScreen() {
       const response = await fetch(`${ENV.API_URL}/extract-pdf`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: Platform.OS === 'web' 
+          ? { 'Accept': 'application/json' }
+          : {
+              'Accept': 'application/json',
+              'Content-Type': 'multipart/form-data',
+            },
         signal: controller.signal,
-        // Remove Content-Type header for web FormData
-        ...(Platform.OS !== 'web' && {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          }
-        })
       });
 
       clearTimeout(timeoutId);
@@ -290,15 +305,19 @@ export default function HomeScreen() {
 
   const handleInputChange = (text: string) => {
     setInput(text);
-    setResponse(null);
+    setResponse({});
   };
 
   const handleDownloadPDF = async () => {
     try {
-      // Format the text based on response type
-      const formattedText = response?.type === 'questions' 
-        ? (response.data as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n\n')
-        : response?.data as string;
+      // Format the text based on active tab and response data
+      const formattedText = activeTab === 'questions' && response.questions
+        ? response.questions.data.map((q, i) => `${i + 1}. ${q}`).join('\n\n')
+        : response.summary?.data || input;
+
+      const noteType = activeTab === 'questions' 
+        ? response.questions?.noteType 
+        : response.summary?.noteType || "General Notes";
 
       const res = await fetch(`${ENV.API_URL}/download-pdf`, {
         method: 'POST',
@@ -306,15 +325,15 @@ export default function HomeScreen() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          text: formattedText || input,
-          note_type: response?.noteType || "General Notes"
+          text: formattedText,
+          note_type: noteType
         }),
       });
 
       if (!res.ok) throw new Error('Failed to generate PDF');
 
+      // Rest of the download logic remains the same
       if (Platform.OS === 'web') {
-        // Web download implementation
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -325,7 +344,7 @@ export default function HomeScreen() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        // Mobile download implementation
+        // Mobile implementation
         const data = await res.blob();
         const fr = new FileReader();
         fr.onload = async () => {
@@ -334,11 +353,10 @@ export default function HomeScreen() {
             encoding: FileSystem.EncodingType.Base64,
           });
           
-          // Share the PDF file
           await Share.share({
             url: fileUri,
             title: 'Save PDF',
-            message: 'Study Notes PDF'  // Required for Android
+            message: 'Study Notes PDF'
           });
         };
         fr.readAsDataURL(data);
@@ -347,6 +365,16 @@ export default function HomeScreen() {
       console.error('PDF download error:', error);
       Alert.alert('Error', 'Unable to download PDF. Please try again.');
     }
+  };
+
+  const handleReset = () => {
+    setInput('');
+    setImage(null);
+    setResponse({});
+    setShowResults(false);
+    setActiveTab(null);
+    setIsImageProcessing(false);
+    setLoadingAction(null);
   };
 
   const styles = StyleSheet.create({
@@ -422,9 +450,12 @@ export default function HomeScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      padding: 8,
+      borderRadius: 8,
       backgroundColor: colors.primary,
-      padding: 16,
-      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      gap: 4,
       shadowColor: colors.shadow,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
@@ -624,171 +655,247 @@ export default function HomeScreen() {
       fontSize: 14,
       fontWeight: '500',
     },
+    tabContainer: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginBottom: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 4,
+      margin: 8,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 12,
+      alignItems: 'center',
+      borderRadius: 6,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    activeTab: {
+      backgroundColor: colors.primary + '20',  // Semi-transparent primary color
+      borderBottomWidth: 0,
+    },
+    inactiveTab: {
+      opacity: 0.7,
+    },
+    tabText: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    resetButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    resetText: {
+      color: colors.primary,
+      marginLeft: 4,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    secondaryActionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      gap: 4,
+    },
+    actionText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
   });
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>AI Study Helper</Text>
 
-      <View style={styles.imageSection}>
-        {!image ? (
-          <View style={styles.uploadButtons}>
-            <TouchableOpacity 
-              style={styles.uploadButton} 
-              onPress={() => pickFile('image')}
-            >
-              <MaterialIcons name="add-photo-alternate" size={32} color={colors.primary} />
-              <Text style={styles.uploadText}>Pick an Image</Text>
-      </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.uploadButton} 
-              onPress={() => pickFile('pdf')}
-            >
-              <MaterialIcons name="picture-as-pdf" size={32} color={colors.primary} />
-              <Text style={styles.uploadText}>Pick a PDF</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.imageContainer}>
-            <Image 
-              source={{ uri: image }} 
-              resizeMode="cover"
-              style={[styles.previewImage, { height: 200 }]}
-            />
-            {isImageProcessing ? (
-              <View style={styles.processingOverlay}>
-                <ActivityIndicator color={colors.primary} size="large" />
-                <Text style={styles.processingText}>Extracting Text...</Text>
-              </View>
-            ) : (
+      {!showResults ? (
+        // Input Section
+        <>
+          <View style={styles.imageSection}>
+            <View style={styles.uploadButtons}>
               <TouchableOpacity 
-                style={styles.retakeButton}
+                style={styles.uploadButton} 
                 onPress={() => pickFile('image')}
               >
-                <MaterialIcons name="refresh" size={24} color="#FFFFFF" />
-                <Text style={styles.retakeText}>Pick New Image</Text>
+                <MaterialIcons name="add-photo-alternate" size={32} color={colors.primary} />
+                <Text style={styles.uploadText}>Pick an Image</Text>
               </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
 
-      <View style={styles.inputContainer}>
-        <MaterialIcons 
-          name="edit" 
-          size={24} 
-          color={colors.textSecondary} 
-          style={styles.inputIcon}
-        />
-      <TextInput
-        style={styles.input}
-        placeholder="Enter or extracted text will appear here"
-          placeholderTextColor={colors.textSecondary}
-        multiline
-          scrollEnabled={true}
-        value={input}
-          onChangeText={handleInputChange}
-          textAlignVertical="top"
-        />
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[
-            styles.actionButton,
-            loadingAction === 'questions' && styles.disabledButton
-          ]} 
-          onPress={handleSummarize}
-          disabled={loadingAction !== null}
-        >
-          {loadingAction === 'summary' ? (
-            <>
-              <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text style={styles.buttonText}>Summarizing...</Text>
-            </>
-          ) : (
-            <>
-              <MaterialIcons name="summarize" size={24} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Summarize</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[
-            styles.actionButton,
-            styles.secondaryButton,
-            loadingAction === 'summary' && styles.disabledButton
-          ]} 
-          onPress={handleGenerateQuestions}
-          disabled={loadingAction !== null}
-        >
-          {loadingAction === 'questions' ? (
-            <>
-              <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text style={styles.buttonText}>Generating...</Text>
-            </>
-          ) : (
-            <>
-              <MaterialIcons name="psychology" size={24} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Generate Questions</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {response && (
-        <View style={styles.resultContainer}>
-          <View style={styles.headerRow}>
-            <View style={styles.titleRow}>
-              <MaterialIcons 
-                name={response.type === 'summary' ? 'description' : 'quiz'} 
-                size={24} 
-                color={colors.primary} 
-              />
-              <Text style={styles.subtitle}>
-                {response?.noteType ? 
-                  `${response.noteType.charAt(0).toUpperCase() + response.noteType.slice(1)} Notes` : 
-                  'Study Notes'
-                }
-              </Text>
+              <TouchableOpacity 
+                style={styles.uploadButton} 
+                onPress={() => pickFile('pdf')}
+              >
+                <MaterialIcons name="picture-as-pdf" size={32} color={colors.primary} />
+                <Text style={styles.uploadText}>Pick a PDF</Text>
+              </TouchableOpacity>
             </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <MaterialIcons 
+              name="edit" 
+              size={24} 
+              color={colors.textSecondary} 
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter or extracted text will appear here"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              scrollEnabled={true}
+              value={input}
+              onChangeText={handleInputChange}
+              textAlignVertical="top"
+            />
+          </View>
+
+          <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={styles.downloadButton} 
-              onPress={handleDownloadPDF}
+              style={[
+                styles.actionButton,
+                loadingAction === 'questions' && styles.disabledButton
+              ]} 
+              onPress={handleSummarize}
+              disabled={loadingAction !== null}
             >
-              <MaterialIcons name="file-download" size={20} color={colors.primary} />
+              {loadingAction === 'summary' ? (
+                <>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={styles.buttonText}>Summarizing...</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="summarize" size={24} color="#FFFFFF" />
+                  <Text style={styles.buttonText}>Summarize</Text>
+                </>
+              )}
             </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[
+                styles.actionButton,
+                styles.secondaryButton,
+                loadingAction === 'summary' && styles.disabledButton
+              ]} 
+              onPress={handleGenerateQuestions}
+              disabled={loadingAction !== null}
+            >
+              {loadingAction === 'questions' ? (
+                <>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={styles.buttonText}>Generating...</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="psychology" size={24} color="#FFFFFF" />
+                  <Text style={styles.buttonText}>Generate Questions</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : (
+        // Results Section
+        <View style={styles.resultContainer}>
+          <View style={styles.tabContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.tab, 
+                activeTab === 'summary' && styles.activeTab,
+                !response.summary && styles.inactiveTab
+              ]}
+              onPress={() => {
+                if (!response.summary) {
+                  handleSummarize();
+                } else {
+                  setActiveTab('summary');
+                }
+              }}
+            >
+              <MaterialIcons name="summarize" size={20} color={colors.text} />
+              <Text style={styles.tabText}>Summary</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.tab, 
+                activeTab === 'questions' && styles.activeTab,
+                !response.questions && styles.inactiveTab
+              ]}
+              onPress={() => {
+                if (!response.questions) {
+                  handleGenerateQuestions();
+                } else {
+                  setActiveTab('questions');
+                }
+              }}
+            >
+              <MaterialIcons name="psychology" size={20} color={colors.text} />
+              <Text style={styles.tabText}>Questions</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.headerRow}>
+            <TouchableOpacity 
+              style={styles.resetButton} 
+              onPress={handleReset}
+            >
+              <MaterialIcons name="refresh" size={20} color={colors.primary} />
+              <Text style={styles.resetText}>Start Over</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.headerActions}>
+              {activeTab === 'summary' && !response.questions && (
+                <TouchableOpacity 
+                  style={styles.secondaryActionButton}
+                  onPress={handleGenerateQuestions}
+                >
+                  <MaterialIcons name="psychology" size={20} color={colors.primary} />
+                  <Text style={styles.actionText}>Generate Questions</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                style={styles.downloadButton} 
+                onPress={handleDownloadPDF}
+              >
+                <MaterialIcons name="file-download" size={20} color={colors.primary} />
+                <Text style={styles.downloadText}>Download</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <ScrollView style={styles.scrollContainer}>
-          {response.type === 'summary' ? (
-              <Text style={styles.resultText}>{response.data as string}</Text>
-            ) : (
+            {activeTab === 'summary' && response.summary && (
+              <Text style={styles.resultText}>{response.summary.data}</Text>
+            )}
+            {activeTab === 'questions' && response.questions && (
               <View style={styles.questionsContainer}>
-                {(response.data as string[]).map((item, index) => (
+                {response.questions.data.map((item, index) => (
                   <View key={index} style={styles.questionItem}>
                     <Text style={styles.questionNumber}>{index + 1}.</Text>
                     <Text style={styles.resultText}>{item}</Text>
                   </View>
                 ))}
-                  </View>
-                )}
-
-            {response.key_terms && response.key_terms.length > 0 && (
-              <View style={styles.keyTermsSection}>
-                <View style={styles.keyTermsHeader}>
-                  <MaterialIcons name="translate" size={20} color="#F54B64" />
-                  <Text style={styles.keyTermsTitle}>Key Terms</Text>
-                </View>
-                <View style={styles.termsContainer}>
-                  {response.key_terms.map((term, index) => (
-                    <View key={index} style={styles.termItem}>
-                      <Text style={styles.termText}>{term}</Text>
-                    </View>
-                  ))}
-                </View>
               </View>
             )}
           </ScrollView>

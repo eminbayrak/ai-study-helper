@@ -10,21 +10,66 @@ class DeepseekService:
 
     async def generate_summary(self, text: str) -> str:
         try:
-            prompt = f"Summarize this text: {text}"
-            inputs = self.tokenizer(prompt, return_tensors="pt", max_length=1024, truncation=True).to(self.device)
+            # Improved prompt for technical text
+            prompt = (
+                "Provide a clear and concise summary of this technical requirement. "
+                "Focus on the main requirements and specifications: "
+                f"{text}"
+            )
+            
+            inputs = self.tokenizer(
+                prompt, 
+                return_tensors="pt", 
+                max_length=1024, 
+                truncation=True
+            ).to(self.device)
             
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
                     max_length=256,
                     min_length=50,
-                    num_beams=4,
+                    num_beams=5,
                     temperature=0.7,
                     no_repeat_ngram_size=3,
+                    do_sample=True,
+                    top_p=0.9,
                     early_stopping=True
                 )
             
             summary = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # Clean up the summary
+            summary = summary.replace("Summary:", "").strip()
+            
+            # If the summary looks like code, generate a new one with different prompt
+            if any(code_indicator in summary.lower() for code_indicator in ['print(', 'for ', 'if ', '==']):
+                prompt = (
+                    "Explain in plain English what this technical requirement is asking for: "
+                    f"{text}"
+                )
+                
+                inputs = self.tokenizer(
+                    prompt, 
+                    return_tensors="pt", 
+                    max_length=1024, 
+                    truncation=True
+                ).to(self.device)
+                
+                outputs = self.model.generate(
+                    **inputs,
+                    max_length=256,
+                    min_length=50,
+                    num_beams=5,
+                    temperature=0.7,
+                    no_repeat_ngram_size=3,
+                    do_sample=True,
+                    top_p=0.9,
+                    early_stopping=True
+                )
+                
+                summary = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
             return summary.strip()
 
         except Exception as e:
