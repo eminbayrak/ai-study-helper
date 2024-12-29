@@ -42,6 +42,31 @@ const checkFileSize = (file: File | Blob): boolean => {
   return file.size <= MAX_FILE_SIZE;
 };
 
+// Add this function to get PDF page count
+const getPdfPages = async (file: File): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        if (!event.target?.result) {
+          resolve(0);
+          return;
+        }
+
+        // For web, we can use a simple approach to count PDF pages
+        const text = event.target.result as string;
+        const pageCount = text.match(/\/Type[\s]*\/Page[^s]/g)?.length || 0;
+        resolve(pageCount);
+      } catch (error) {
+        console.error('Error counting PDF pages:', error);
+        resolve(0);
+      }
+    };
+    reader.onerror = () => resolve(0);
+    reader.readAsBinaryString(file);
+  });
+};
+
 export default function HomeScreen() {
   const { colors } = useThemeColor();
   const [input, setInput] = useState<string>('');
@@ -53,6 +78,12 @@ export default function HomeScreen() {
   const [fileType, setFileType] = useState<FileType>('image');
   const [activeTab, setActiveTab] = useState<'summary' | 'questions' | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [fileInfo, setFileInfo] = useState<{
+    name: string;
+    size: number;
+    pages?: number;
+    type: 'image' | 'pdf' | null;
+  } | null>(null);
 
   // Image picker function
   const pickFile = async (type: FileType = 'image') => {
@@ -74,7 +105,7 @@ export default function HomeScreen() {
           if (type === 'image') {
             const imageUri = URL.createObjectURL(file);
             setImage(imageUri);
-            await handleExtractText(imageUri);
+            await handleExtractText(imageUri, file.name, file.size);
           } else {
             await handlePdfExtract(file);
           }
@@ -89,8 +120,13 @@ export default function HomeScreen() {
     });
 
           if (!result.canceled && result.assets[0]) {
-      setImage(result.assets[0].uri);
-            await handleExtractText(result.assets[0].uri);
+      const asset = result.assets[0];
+      setImage(asset.uri);
+      await handleExtractText(
+        asset.uri,
+        asset.uri.split('/').pop() || 'image.jpg',
+        asset.fileSize || 0
+      );
           }
         } else {
           const result = await DocumentPicker.getDocumentAsync({
@@ -110,10 +146,15 @@ export default function HomeScreen() {
   };
 
   // API call for OCR and text extraction
-  const handleExtractText = async (imageUri: string) => {
+  const handleExtractText = async (imageUri: string, fileName: string, fileSize: number) => {
     setIsImageProcessing(true);
     setInput('');
     setResponse({});
+    setFileInfo({
+      name: fileName,
+      size: fileSize,
+      type: 'image'
+    });
 
     try {
       const formData = new FormData();
@@ -251,6 +292,12 @@ export default function HomeScreen() {
   const handlePdfExtract = async (file: File | DocumentPicker.DocumentPickerAsset) => {
     try {
       setIsImageProcessing(true);
+      setFileInfo({
+        name: file instanceof File ? file.name : file.name,
+        size: file instanceof File ? file.size : file.size || 0,
+        type: 'pdf',
+        pages: file instanceof File ? await getPdfPages(file) : 1 // Default to 1 for mobile
+      });
       const formData = new FormData();
 
       if (file instanceof File) {  // Web
@@ -375,6 +422,7 @@ export default function HomeScreen() {
     setActiveTab(null);
     setIsImageProcessing(false);
     setLoadingAction(null);
+    setFileInfo(null);
   };
 
   const styles = StyleSheet.create({
@@ -720,6 +768,24 @@ export default function HomeScreen() {
       fontSize: 14,
       fontWeight: '500',
     },
+    fileInfoHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginBottom: 12,
+      gap: 8,
+    },
+    fileInfoText: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      flex: 1,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      flex: 1,
+    },
   });
 
   return (
@@ -774,22 +840,37 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <MaterialIcons 
-              name="edit" 
-              size={24} 
-              color={colors.textSecondary} 
-              style={styles.inputIcon}
-            />
-      <TextInput
-        style={styles.input}
-        placeholder="Enter or extracted text will appear here"
-              placeholderTextColor={colors.textSecondary}
-        multiline
-              scrollEnabled={true}
-        value={input}
-              onChangeText={handleInputChange}
-              textAlignVertical="top"
-            />
+            {fileInfo && (
+              <View style={styles.fileInfoHeader}>
+                <MaterialIcons 
+                  name={fileInfo.type === 'pdf' ? 'picture-as-pdf' : 'image'} 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
+                <Text style={styles.fileInfoText}>
+                  {fileInfo.name} ({(fileInfo.size / 1024).toFixed(1)} KB)
+                  {fileInfo.pages && ` • ${fileInfo.pages} pages`}
+                </Text>
+              </View>
+            )}
+            <View style={styles.inputRow}>
+              <MaterialIcons 
+                name="edit" 
+                size={24} 
+                color={colors.textSecondary} 
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter or extracted text will appear here"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                scrollEnabled={true}
+                value={input}
+                onChangeText={handleInputChange}
+                textAlignVertical="top"
+              />
+            </View>
           </View>
 
           <View style={styles.buttonContainer}>
