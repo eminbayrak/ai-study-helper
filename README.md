@@ -2,6 +2,11 @@
 
 An intelligent chatbot that analyzes study materials through images or text, providing comprehensive summaries and generating relevant study questions to enhance learning effectiveness.
 
+## Demo
+
+https://github.com/user-attachments/assets/d0182548-e70f-47f7-976c-e30348f2396b
+
+
 ## Project Structure
 ```
 .
