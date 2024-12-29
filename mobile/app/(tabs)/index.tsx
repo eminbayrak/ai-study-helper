@@ -473,14 +473,14 @@ export default function HomeScreen() {
     },
     imageContainer: {
       position: 'relative',
-      borderRadius: 12,
+      width: '100%',
+      borderRadius: 16,
       overflow: 'hidden',
-      backgroundColor: '#FFFFFF',
+      marginBottom: 16,
     },
     previewImage: {
       width: '100%',
-      height: 200,
-      resizeMode: 'cover',
+      borderRadius: 16,
     },
     resultContainer: {
       flex: 1,
@@ -565,7 +565,7 @@ export default function HomeScreen() {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.7)',
+      backgroundColor: 'rgba(0,0,0,0.5)',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -573,7 +573,7 @@ export default function HomeScreen() {
       color: '#FFFFFF',
       marginTop: 8,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '500',
     },
     retakeButton: {
       position: 'absolute',
@@ -731,23 +731,47 @@ export default function HomeScreen() {
         // Input Section
         <>
           <View style={styles.imageSection}>
-            <View style={styles.uploadButtons}>
-              <TouchableOpacity 
-                style={styles.uploadButton} 
-                onPress={() => pickFile('image')}
-              >
-                <MaterialIcons name="add-photo-alternate" size={32} color={colors.primary} />
-                <Text style={styles.uploadText}>Pick an Image</Text>
-              </TouchableOpacity>
+            {!image ? (
+              <View style={styles.uploadButtons}>
+                <TouchableOpacity 
+                  style={styles.uploadButton} 
+                  onPress={() => pickFile('image')}
+                >
+                  <MaterialIcons name="add-photo-alternate" size={32} color={colors.primary} />
+                  <Text style={styles.uploadText}>Pick an Image</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.uploadButton} 
-                onPress={() => pickFile('pdf')}
-              >
-                <MaterialIcons name="picture-as-pdf" size={32} color={colors.primary} />
-                <Text style={styles.uploadText}>Pick a PDF</Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity 
+                  style={styles.uploadButton} 
+                  onPress={() => pickFile('pdf')}
+                >
+                  <MaterialIcons name="picture-as-pdf" size={32} color={colors.primary} />
+                  <Text style={styles.uploadText}>Pick a PDF</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.imageContainer}>
+                <Image 
+                  source={{ uri: image }} 
+                  resizeMode="cover"
+                  style={[styles.previewImage, { height: 200 }]}
+                />
+                {isImageProcessing ? (
+                  <View style={styles.processingOverlay}>
+                    <ActivityIndicator color={colors.primary} size="large" />
+                    <Text style={styles.processingText}>Extracting Text...</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.retakeButton}
+                    onPress={handleReset}
+                  >
+                    <MaterialIcons name="refresh" size={24} color="#FFFFFF" />
+                    <Text style={styles.retakeText}>Start Over</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
@@ -825,15 +849,25 @@ export default function HomeScreen() {
                 !response.summary && styles.inactiveTab
               ]}
               onPress={() => {
-                if (!response.summary) {
+                if (!response.summary && !loadingAction) {
                   handleSummarize();
                 } else {
                   setActiveTab('summary');
                 }
               }}
+              disabled={loadingAction !== null}
             >
-              <MaterialIcons name="summarize" size={20} color={colors.text} />
-              <Text style={styles.tabText}>Summary</Text>
+              {loadingAction === 'summary' ? (
+                <>
+                  <ActivityIndicator color={colors.primary} size="small" />
+                  <Text style={styles.tabText}>Summarizing...</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="summarize" size={20} color={colors.text} />
+                  <Text style={styles.tabText}>Summary</Text>
+                </>
+              )}
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -843,15 +877,25 @@ export default function HomeScreen() {
                 !response.questions && styles.inactiveTab
               ]}
               onPress={() => {
-                if (!response.questions) {
+                if (!response.questions && !loadingAction) {
                   handleGenerateQuestions();
                 } else {
                   setActiveTab('questions');
                 }
               }}
+              disabled={loadingAction !== null}
             >
-              <MaterialIcons name="psychology" size={20} color={colors.text} />
-              <Text style={styles.tabText}>Questions</Text>
+              {loadingAction === 'questions' ? (
+                <>
+                  <ActivityIndicator color={colors.primary} size="small" />
+                  <Text style={styles.tabText}>Generating...</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="psychology" size={20} color={colors.text} />
+                  <Text style={styles.tabText}>Questions</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -864,24 +908,17 @@ export default function HomeScreen() {
               <Text style={styles.resetText}>Start Over</Text>
             </TouchableOpacity>
             
-            <View style={styles.headerActions}>
-              {activeTab === 'summary' && !response.questions && (
-                <TouchableOpacity 
-                  style={styles.secondaryActionButton}
-                  onPress={handleGenerateQuestions}
-                >
-                  <MaterialIcons name="psychology" size={20} color={colors.primary} />
-                  <Text style={styles.actionText}>Generate Questions</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity 
-                style={styles.downloadButton} 
-                onPress={handleDownloadPDF}
-              >
-                <MaterialIcons name="file-download" size={20} color={colors.primary} />
-                <Text style={styles.downloadText}>Download</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={[
+                styles.downloadButton,
+                loadingAction && styles.disabledButton
+              ]}
+              onPress={handleDownloadPDF}
+              disabled={loadingAction !== null}
+            >
+              <MaterialIcons name="file-download" size={20} color={colors.primary} />
+              <Text style={styles.downloadText}>Download</Text>
+            </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.scrollContainer}>
