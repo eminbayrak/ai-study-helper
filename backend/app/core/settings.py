@@ -1,6 +1,15 @@
 from pydantic_settings import BaseSettings
 from typing import List
 from functools import lru_cache
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Get the root directory (one level up from backend)
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+
+# Load .env from root directory
+load_dotenv(ROOT_DIR / '.env')
 
 class Settings(BaseSettings):
     # API settings
@@ -22,11 +31,16 @@ class Settings(BaseSettings):
     SUMMARIZATION_MODEL: str = "facebook/bart-large-cnn"
     QUESTION_GENERATION_MODEL: str = "google/flan-t5-base"
     MAX_TEXT_LENGTH: int = 1024
+    
+    # OpenRouter settings
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "deepseek-ai/deepseek-coder-33b-instruct")
 
     class Config:
-        env_file = ".env"
+        env_file = str(ROOT_DIR / '.env')
         case_sensitive = True
+        env_file_encoding = 'utf-8'
 
 @lru_cache()
-def get_settings():
+def get_settings() -> Settings:
     return Settings() 

@@ -82,14 +82,14 @@ export default function HomeScreen() {
         input.click();
       } else {
         if (type === 'image') {
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 1,
-          });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
 
           if (!result.canceled && result.assets[0]) {
-            setImage(result.assets[0].uri);
+      setImage(result.assets[0].uri);
             await handleExtractText(result.assets[0].uri);
           }
         } else {
@@ -738,7 +738,7 @@ export default function HomeScreen() {
                 >
                   <MaterialIcons name="add-photo-alternate" size={32} color={colors.primary} />
                   <Text style={styles.uploadText}>Pick an Image</Text>
-                </TouchableOpacity>
+      </TouchableOpacity>
 
                 <TouchableOpacity 
                   style={styles.uploadButton} 
@@ -780,13 +780,13 @@ export default function HomeScreen() {
               color={colors.textSecondary} 
               style={styles.inputIcon}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter or extracted text will appear here"
+      <TextInput
+        style={styles.input}
+        placeholder="Enter or extracted text will appear here"
               placeholderTextColor={colors.textSecondary}
-              multiline
+        multiline
               scrollEnabled={true}
-              value={input}
+        value={input}
               onChangeText={handleInputChange}
               textAlignVertical="top"
             />
@@ -888,9 +888,9 @@ export default function HomeScreen() {
                 <>
                   <ActivityIndicator color={colors.primary} size="small" />
                   <Text style={styles.tabText}>Generating...</Text>
-                </>
-              ) : (
-                <>
+            </>
+          ) : (
+            <>
                   <MaterialIcons name="psychology" size={20} color={colors.text} />
                   <Text style={styles.tabText}>Questions</Text>
                 </>
@@ -932,8 +932,8 @@ export default function HomeScreen() {
                     <Text style={styles.resultText}>{item}</Text>
                   </View>
                 ))}
-              </View>
-            )}
+                  </View>
+                )}
           </ScrollView>
         </View>
       )}

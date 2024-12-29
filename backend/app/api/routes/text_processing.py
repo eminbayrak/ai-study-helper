@@ -1,19 +1,19 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from app.models.schemas import TextRequest, TextResponse
-from app.services.deepseek_service import DeepseekService
+from app.services.openrouter_service import OpenRouterService
 from app.services.pdf_service import PDFService
 from fastapi.responses import StreamingResponse
 import PyPDF2
 import io
 
 router = APIRouter()
-deepseek_service = DeepseekService()
+openrouter_service = OpenRouterService()
 pdf_service = PDFService()
 
 @router.post("/summarize", response_model=TextResponse)
 async def summarize_text(request: TextRequest):
     try:
-        summary = await deepseek_service.generate_summary(request.text)
+        summary = await openrouter_service.generate_summary(request.text)
         return TextResponse(
             summary=summary,
             note_type="general"
@@ -24,7 +24,7 @@ async def summarize_text(request: TextRequest):
 @router.post("/generate-questions", response_model=TextResponse)
 async def generate_questions(request: TextRequest):
     try:
-        questions = await deepseek_service.generate_questions(request.text)
+        questions = await openrouter_service.generate_questions(request.text)
         return TextResponse(
             questions=questions,
             note_type="general"
