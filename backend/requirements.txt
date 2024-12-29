@@ -5,8 +5,9 @@ opencv-python
 numpy
 pytesseract
 python-dotenv
-transformers
-torch
+transformers>=4.37.0
+torch>=2.0.0
+deepseek-vl2
 sentencepiece
 uvicorn
 pydantic

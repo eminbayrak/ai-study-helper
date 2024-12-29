@@ -75,14 +75,14 @@ export default function HomeScreen() {
         input.click();
       } else {
         if (type === 'image') {
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 1,
-          });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
 
-          if (!result.canceled) {
-            setImage(result.assets[0].uri);
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
             handleExtractText(result.assets[0].uri);
           }
         } else {
@@ -366,27 +366,34 @@ export default function HomeScreen() {
       marginBottom: 16,
     },
     uploadButton: {
+      flex: 1,
       backgroundColor: colors.surface,
-      padding: 32,
-      borderRadius: 12,
+      padding: 24,
+      margin: 8,
+      borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 2,
       borderColor: colors.primary,
       borderStyle: 'dashed',
-    },
-    inputContainer: {
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 16,
-      flexDirection: 'row',
       shadowColor: colors.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
-      maxHeight: 200,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    inputContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 20,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     inputIcon: {
       marginRight: 12,
@@ -399,39 +406,39 @@ export default function HomeScreen() {
       maxHeight: 200,
       color: colors.text,
       fontSize: 16,
+      lineHeight: 24,
       textAlignVertical: 'top',
       paddingTop: 0,
       paddingBottom: 0,
     },
     buttonContainer: {
       flexDirection: 'row',
+      marginBottom: 20,
+      paddingHorizontal: 4,
       gap: 12,
-      marginBottom: 16,
     },
     actionButton: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#F54B64',
+      backgroundColor: colors.primary,
       padding: 16,
       borderRadius: 12,
-      gap: 8,
       shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
     },
     secondaryButton: {
-      backgroundColor: '#3DD598',
+      backgroundColor: colors.secondary,
     },
     buttonText: {
       color: '#FFFFFF',
-      marginLeft: 8,
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '600',
-      textAlign: 'center',
+      marginLeft: 8,
     },
     imageContainer: {
       position: 'relative',
@@ -446,10 +453,16 @@ export default function HomeScreen() {
     },
     resultContainer: {
       flex: 1,
-      marginTop: 16,
       backgroundColor: colors.surface,
-      borderRadius: 12,
+      borderRadius: 16,
       overflow: 'hidden',
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     scrollContainer: {
       flex: 1,
@@ -470,19 +483,24 @@ export default function HomeScreen() {
       marginLeft: 12,
     },
     resultText: {
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: 16,
+      lineHeight: 24,
       color: colors.text,
     },
     questionItem: {
       flexDirection: 'row',
-      marginBottom: 16,
-      paddingRight: 8,
+      backgroundColor: colors.surface,
+      padding: 12,
+      marginBottom: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     questionNumber: {
       color: colors.primary,
       fontWeight: '600',
-      marginRight: 8,
+      fontSize: 16,
+      marginRight: 12,
       minWidth: 24,
     },
     keyTermsSection: {
@@ -548,7 +566,7 @@ export default function HomeScreen() {
     },
     uploadText: {
       color: colors.text,
-      fontSize: 16,
+      fontSize: 15,
       marginTop: 8,
       fontWeight: '500',
     },
@@ -579,9 +597,10 @@ export default function HomeScreen() {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 14,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+      backgroundColor: colors.background,
     },
     titleRow: {
       flexDirection: 'row',
@@ -620,8 +639,8 @@ export default function HomeScreen() {
             >
               <MaterialIcons name="add-photo-alternate" size={32} color={colors.primary} />
               <Text style={styles.uploadText}>Pick an Image</Text>
-            </TouchableOpacity>
-            
+      </TouchableOpacity>
+
             <TouchableOpacity 
               style={styles.uploadButton} 
               onPress={() => pickFile('pdf')}
@@ -662,13 +681,13 @@ export default function HomeScreen() {
           color={colors.textSecondary} 
           style={styles.inputIcon}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Enter or extracted text will appear here"
+      <TextInput
+        style={styles.input}
+        placeholder="Enter or extracted text will appear here"
           placeholderTextColor={colors.textSecondary}
-          multiline
+        multiline
           scrollEnabled={true}
-          value={input}
+        value={input}
           onChangeText={handleInputChange}
           textAlignVertical="top"
         />
@@ -744,7 +763,7 @@ export default function HomeScreen() {
           </View>
 
           <ScrollView style={styles.scrollContainer}>
-            {response.type === 'summary' ? (
+          {response.type === 'summary' ? (
               <Text style={styles.resultText}>{response.data as string}</Text>
             ) : (
               <View style={styles.questionsContainer}>
@@ -754,8 +773,8 @@ export default function HomeScreen() {
                     <Text style={styles.resultText}>{item}</Text>
                   </View>
                 ))}
-              </View>
-            )}
+                  </View>
+                )}
 
             {response.key_terms && response.key_terms.length > 0 && (
               <View style={styles.keyTermsSection}>
