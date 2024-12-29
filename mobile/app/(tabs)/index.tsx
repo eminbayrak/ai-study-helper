@@ -37,6 +37,8 @@ type ResponseType = {
 type FileType = 'image' | 'pdf';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+const MAX_FILE_SIZE_MB = 5;
+const MAX_PAGES = 50;
 
 const checkFileSize = (file: File | Blob): boolean => {
   return file.size <= MAX_FILE_SIZE;
@@ -84,11 +86,15 @@ export default function HomeScreen() {
     pages?: number;
     type: 'image' | 'pdf' | null;
   } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Image picker function
   const pickFile = async (type: FileType = 'image') => {
     try {
+      setErrorMessage(null); // Clear any previous errors
+
       if (Platform.OS === 'web') {
+        // Web handling remains the same
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = type === 'image' ? 'image/*' : 'application/pdf';
@@ -97,8 +103,8 @@ export default function HomeScreen() {
           const file = e.target.files?.[0];
           if (!file) return;
 
-          if (!checkFileSize(file)) {
-            Alert.alert('Error', 'File size must be less than 5MB');
+          if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            setErrorMessage(`File size must be less than ${MAX_FILE_SIZE_MB}MB`);
             return;
           }
 
@@ -112,21 +118,29 @@ export default function HomeScreen() {
         };
         input.click();
       } else {
+        // Mobile handling
         if (type === 'image') {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 1,
+          });
 
           if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setImage(asset.uri);
-      await handleExtractText(
-        asset.uri,
-        asset.uri.split('/').pop() || 'image.jpg',
-        asset.fileSize || 0
-      );
+            const asset = result.assets[0];
+            
+            // Check file size for mobile
+            if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE_MB * 1024 * 1024) {
+              setErrorMessage(`File size must be less than ${MAX_FILE_SIZE_MB}MB`);
+              return;
+            }
+
+            setImage(asset.uri);
+            await handleExtractText(
+              asset.uri,
+              asset.uri.split('/').pop() || 'image.jpg',
+              asset.fileSize || 0
+            );
           }
         } else {
           const result = await DocumentPicker.getDocumentAsync({
@@ -135,28 +149,37 @@ export default function HomeScreen() {
           });
 
           if (!result.canceled && result.assets[0]) {
-            await handlePdfExtract(result.assets[0]);
+            const asset = result.assets[0];
+            
+            // Check file size for mobile PDF
+            if (asset.size && asset.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+              setErrorMessage(`File size must be less than ${MAX_FILE_SIZE_MB}MB`);
+              return;
+            }
+
+            await handlePdfExtract(asset);
           }
         }
       }
     } catch (error) {
       console.error('File picker error:', error);
-      Alert.alert('Error', 'Failed to pick file. Please try again.');
+      setErrorMessage('Failed to pick file. Please try again.');
     }
   };
 
   // API call for OCR and text extraction
   const handleExtractText = async (imageUri: string, fileName: string, fileSize: number) => {
-    setIsImageProcessing(true);
-    setInput('');
-    setResponse({});
-    setFileInfo({
-      name: fileName,
-      size: fileSize,
-      type: 'image'
-    });
-
     try {
+      setErrorMessage(null);
+      setIsImageProcessing(true);
+      setInput('');
+      setResponse({});
+      setFileInfo({
+        name: fileName,
+        size: fileSize,
+        type: 'image'
+      });
+
       const formData = new FormData();
 
       if (Platform.OS === 'web') {
@@ -184,14 +207,15 @@ export default function HomeScreen() {
       });
 
       if (!res.ok) {
-        throw new Error(await res.text());
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to extract text');
       }
 
       const data = await res.json();
       setInput(data.extracted_text);
     } catch (error) {
       console.error('Upload error:', error);
-      Alert.alert('Error', 'Unable to extract text. Please try again.');
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to extract text');
     } finally {
       setIsImageProcessing(false);
     }
@@ -266,7 +290,8 @@ export default function HomeScreen() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to generate questions');
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to generate questions');
       }
 
       const data = await res.json();
@@ -280,7 +305,10 @@ export default function HomeScreen() {
       }));
     } catch (error) {
       console.error('Question generation error:', error);
-      Alert.alert('Error', 'Unable to generate questions. Please try again.');
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Unable to generate questions'
+      );
     } finally {
       setLoadingAction(null);
       setActiveTab('questions');
@@ -291,6 +319,14 @@ export default function HomeScreen() {
   // Add PDF handler
   const handlePdfExtract = async (file: File | DocumentPicker.DocumentPickerAsset) => {
     try {
+      setErrorMessage(null); // Clear any previous errors
+      // Check file size
+      const fileSize = file instanceof File ? file.size : file.size || 0;
+      if (fileSize > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        setErrorMessage(`File size must be less than ${MAX_FILE_SIZE_MB}MB`);
+        return;
+      }
+
       setIsImageProcessing(true);
       setFileInfo({
         name: file instanceof File ? file.name : file.name,
@@ -328,9 +364,8 @@ export default function HomeScreen() {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server response:', errorText);
-        throw new Error(`Failed to extract text: ${errorText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to extract text from PDF');
       }
 
       const data = await response.json();
@@ -341,10 +376,7 @@ export default function HomeScreen() {
       setInput(data.extracted_text || data.text);
     } catch (error) {
       console.error('PDF extract error:', error);
-      Alert.alert(
-        'Error', 
-        error instanceof Error ? error.message : 'Failed to extract text from PDF. Please try again.'
-      );
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to process PDF');
     } finally {
       setIsImageProcessing(false);
     }
@@ -423,6 +455,7 @@ export default function HomeScreen() {
     setIsImageProcessing(false);
     setLoadingAction(null);
     setFileInfo(null);
+    setErrorMessage(null); // Clear error message
   };
 
   const styles = StyleSheet.create({
@@ -786,11 +819,34 @@ export default function HomeScreen() {
       flexDirection: 'row',
       flex: 1,
     },
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      backgroundColor: '#FFE5E5',
+      borderRadius: 8,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: '#FF4444',
+    },
+    errorText: {
+      color: '#FF4444',
+      marginLeft: 8,
+      fontSize: 14,
+      flex: 1,
+    },
   });
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>AI Study Helper</Text>
+
+      {errorMessage && (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error" size={20} color="#FF4444" />
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      )}
 
       {!showResults ? (
         // Input Section
@@ -860,13 +916,13 @@ export default function HomeScreen() {
                 color={colors.textSecondary} 
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter or extracted text will appear here"
+      <TextInput
+        style={styles.input}
+        placeholder="Enter or extracted text will appear here"
                 placeholderTextColor={colors.textSecondary}
-                multiline
+        multiline
                 scrollEnabled={true}
-                value={input}
+        value={input}
                 onChangeText={handleInputChange}
                 textAlignVertical="top"
               />
