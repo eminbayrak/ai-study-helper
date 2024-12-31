@@ -39,46 +39,34 @@ type WordStatus = {
 export default function LinguaSlideScreen() {
   const { colors } = useThemeColor();
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
-  const [wordList, setWordList] = useState<WordStatus[]>(() => 
-    WORD_SETS['easy'].map((word, index) => ({
-      word,
-      completed: false,
-      unlocked: index === 0 // Only first word is unlocked initially
-    }))
-  );
+  const [wordList, setWordList] = useState<WordStatus[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [progress, setProgress] = useState(0);
   const webSpeechRef = useRef<any>(null);
 
-  // Initialize word list
   useEffect(() => {
-    console.log('Initializing word list...');
-    const initialWords = WORD_SETS[difficulty].map((word, index) => ({
-      word,
-      completed: false,
-      unlocked: index === 0 // First word should be unlocked
-    }));
-    console.log('Initial words:', initialWords);
-    setWordList(initialWords);
-    setProgress(0);
-  }, [difficulty]); // Only re-run when difficulty changes
+    const initializeWords = () => {
+      const initialWords = WORD_SETS[difficulty].map((word, index) => ({
+        word,
+        completed: false,
+        unlocked: index === 0 // Only the first word is unlocked initially
+      }));
+      setWordList(initialWords);
+      setProgress(0);
+    };
 
-  // Setup speech recognition
+    initializeWords();
+  }, [difficulty]);
+
   useEffect(() => {
     if (Platform.OS === 'web') {
       if ('webkitSpeechRecognition' in window) {
         const recognition = new window.webkitSpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.onstart = () => {
-          console.log('Speech recognition started');
-        };
-        recognition.onend = () => {
-          console.log('Speech recognition ended');
-        };
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-        };
+        recognition.onstart = () => console.log('Speech recognition started');
+        recognition.onend = () => console.log('Speech recognition ended');
+        recognition.onerror = (event) => console.error('Speech recognition error:', event.error);
         recognition.onresult = (event) => {
           const last = event.results.length - 1;
           const text = event.results[last][0].transcript;
@@ -88,15 +76,9 @@ export default function LinguaSlideScreen() {
         webSpeechRef.current = recognition;
       }
     } else {
-      Voice.onSpeechStart = () => {
-        console.log('Speech recognition started (mobile)');
-      };
-      Voice.onSpeechEnd = () => {
-        console.log('Speech recognition ended (mobile)');
-      };
-      Voice.onSpeechError = (e) => {
-        console.error('Speech recognition error (mobile):', e);
-      };
+      Voice.onSpeechStart = () => console.log('Speech recognition started (mobile)');
+      Voice.onSpeechEnd = () => console.log('Speech recognition ended (mobile)');
+      Voice.onSpeechError = (e) => console.error('Speech recognition error (mobile):', e);
       Voice.onSpeechResults = (e: any) => {
         console.log('Speech detected (mobile):', e.value[0]);
         checkPronunciation(e.value[0]);
@@ -113,7 +95,6 @@ export default function LinguaSlideScreen() {
   const toggleListening = async () => {
     try {
       if (isListening) {
-        console.log('Stopping speech recognition...');
         setIsListening(false);
         if (Platform.OS === 'web') {
           webSpeechRef.current?.stop();
@@ -121,7 +102,6 @@ export default function LinguaSlideScreen() {
           await Voice.stop();
         }
       } else {
-        console.log('Starting speech recognition...');
         setIsListening(true);
         if (Platform.OS === 'web') {
           webSpeechRef.current?.start();
@@ -135,69 +115,50 @@ export default function LinguaSlideScreen() {
   };
 
   const checkPronunciation = (spokenText: string) => {
-    console.log('Current wordList state:', wordList);
-    console.log('Checking pronunciation for:', spokenText);
-    
-    // Find first unlocked and uncompleted word
-    const currentWordIndex = wordList.findIndex(w => w.unlocked && !w.completed);
-    console.log('Current word index:', currentWordIndex);
-    
-    if (currentWordIndex === -1) {
-      console.log('All words completed - resetting game');
-      resetGame();
-      return;
-    }
+    setWordList((prevWordList) => {
+      const currentWordIndex = prevWordList.findIndex(w => w.unlocked && !w.completed);
 
-    const currentWord = wordList[currentWordIndex];
-    console.log('Current word to match:', currentWord.word);
-    
-    const spokenLower = spokenText.toLowerCase().trim();
-    const targetLower = currentWord.word.toLowerCase().trim();
-    
-    console.log(`Comparing: "${spokenLower}" with "${targetLower}"`);
-    
-    if (spokenLower === targetLower) {
-      console.log('Match found! Word pronounced correctly');
-      
-      // Create new word list with updated states
-      const newWordList = wordList.map((word, index) => {
-        if (index === currentWordIndex) {
-          // Mark current word as completed but keep it unlocked
-          return { ...word, completed: true };
-        }
-        if (index === currentWordIndex + 1) {
-          // Unlock next word
-          return { ...word, unlocked: true };
-        }
-        return word;
-      });
-      
-      console.log('New word list:', newWordList);
-      setWordList(newWordList);
-      setProgress((currentWordIndex + 1) * 10);
-    } else {
-      console.log('No match found, try again');
-    }
+      if (currentWordIndex === -1) {
+        console.log('All words completed - resetting game');
+        resetGame();
+        return prevWordList;
+      }
+
+      const currentWord = prevWordList[currentWordIndex];
+      const spokenLower = spokenText.toLowerCase().trim();
+      const targetLower = currentWord.word.toLowerCase().trim();
+
+      if (spokenLower === targetLower) {
+        console.log('Match found! Word pronounced correctly');
+
+        const updatedWordList = prevWordList.map((word, index) => {
+          if (index === currentWordIndex) {
+            return { ...word, completed: true };
+          }
+          if (index === currentWordIndex + 1) {
+            return { ...word, unlocked: true };
+          }
+          return word;
+        });
+
+        setProgress((currentWordIndex + 1) * 10);
+        return updatedWordList;
+      } else {
+        console.log('No match found, try again');
+        return prevWordList;
+      }
+    });
   };
 
   const resetGame = () => {
-    const words = WORD_SETS[difficulty].map((word, index) => ({
+    const resetWords = WORD_SETS[difficulty].map((word, index) => ({
       word,
       completed: false,
       unlocked: index === 0
     }));
-    setWordList(words);
+    setWordList(resetWords);
     setProgress(0);
   };
-
-  // Add debug logging for state updates
-  useEffect(() => {
-    console.log('WordList state updated:', wordList.map(w => ({
-      word: w.word,
-      completed: w.completed,
-      unlocked: w.unlocked
-    })));
-  }, [wordList]);
 
   return (
     <ThemedView style={styles.container}>
@@ -210,8 +171,8 @@ export default function LinguaSlideScreen() {
 
       <View style={styles.wordList}>
         {wordList.map((item, index) => (
-          <View 
-            key={index} 
+          <View
+            key={index}
             style={[
               styles.wordCard,
               !item.unlocked && styles.lockedCard,
@@ -219,26 +180,20 @@ export default function LinguaSlideScreen() {
             ]}
           >
             <ThemedText style={styles.word}>{item.word}</ThemedText>
-            {item.completed && (
-              <MaterialIcons name="check-circle" size={24} color="green" />
-            )}
+            {item.completed && <MaterialIcons name="check-circle" size={24} color="green" />}
           </View>
         ))}
       </View>
 
       <View style={styles.controls}>
-        <Pressable 
+        <Pressable
           style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
           onPress={toggleListening}
         >
-          <MaterialIcons 
-            name={isListening ? "mic" : "mic-none"} 
-            size={24} 
-            color="white" 
-          />
+          <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={24} color="white" />
         </Pressable>
 
-        <Pressable 
+        <Pressable
           style={[styles.button, { backgroundColor: colors.primary }]}
           onPress={resetGame}
         >
@@ -273,82 +228,23 @@ export default function LinguaSlideScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  progressBar: {
-    height: 10,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  wordList: {
-    flex: 1,
-    gap: 10,
-  },
-  wordCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  lockedCard: {
-    opacity: 0.5,
-  },
-  word: {
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-    marginVertical: 20,
-  },
-  button: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  difficultyControls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-  },
+  container: { flex: 1, padding: 20 },
+  header: { marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
+  progressBar: { height: 10, backgroundColor: '#E0E0E0', borderRadius: 5, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 5 },
+  wordList: { flex: 1, gap: 10 },
+  wordCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderRadius: 8 },
+  lockedCard: { opacity: 0.5 },
+  word: { fontSize: 18, fontWeight: '500' },
+  controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 20 },
+  button: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+  difficultyControls: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 10 },
   difficultyButton: {
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
   },
-  difficultyText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  difficultyText: { fontSize: 14, fontWeight: '500' }
 });
