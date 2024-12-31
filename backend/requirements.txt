@@ -7,10 +7,11 @@ pytesseract
 python-dotenv
 transformers>=4.37.0
 torch>=2.0.0
-deepseek-vl2
-sentencepiece
+pydantic-settings
 uvicorn
 pydantic
-pydantic-settings 
-PyPDF2==3.0.1 
 reportlab
+sentencepiece
+aiohttp
+tiktoken
+PyPDF2==3.0.1
