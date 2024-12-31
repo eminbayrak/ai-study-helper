@@ -2,6 +2,7 @@
   "expo": {
     "plugins": [
       "@react-native-voice/voice"
-    ]
+    ],
+    "assets": ["assets/sounds/"]
   }
 } 

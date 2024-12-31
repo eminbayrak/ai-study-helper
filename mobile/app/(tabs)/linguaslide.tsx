@@ -7,6 +7,7 @@ import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import ENV from '../../env';
 import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 
 declare global {
   interface Window {
@@ -65,6 +66,8 @@ export default function LinguaSlideScreen() {
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const successSound = useRef<Audio.Sound>();
+  const failureSound = useRef<Audio.Sound>();
 
   // Fetch words from API
   const fetchWords = async () => {
@@ -319,7 +322,9 @@ export default function LinguaSlideScreen() {
       
       // Common homophones
       'red': ['read', 'red'],
+      'dog': ['doe', 'talk', 'dough'],
       'read': ['red', 'reed'],
+      'big': ['bigh'],
       'ball': ['bawl'],
       'blue': ['blew'],
       'sea': ['see', 'c'],
@@ -347,6 +352,7 @@ export default function LinguaSlideScreen() {
       'mail': ['male'],
       'rain': ['reign', 'rein'],
       'raise': ['rays', 'raze'],
+      'run': ['ron'],
       'role': ['roll'],
       'sale': ['sail'],
       'scene': ['seen'],
@@ -386,8 +392,37 @@ export default function LinguaSlideScreen() {
     return false;
   };
 
-  // Update the checkPronunciation function
-  const checkPronunciation = (spokenText: string) => {
+  // Add this function to load sounds
+  const loadSounds = async () => {
+    try {
+      // Use require with explicit type checking
+      const successModule = require('../../assets/sounds/success.mp3');
+      const failureModule = require('../../assets/sounds/failure.mp3');
+
+      if (successModule && failureModule) {
+        const { sound: successSfx } = await Audio.Sound.createAsync(successModule);
+        const { sound: failureSfx } = await Audio.Sound.createAsync(failureModule);
+        
+        successSound.current = successSfx;
+        failureSound.current = failureSfx;
+      }
+    } catch (error) {
+      console.error('Error loading sounds:', error);
+      // Continue without sounds if loading fails
+    }
+  };
+
+  // Add cleanup in useEffect
+  useEffect(() => {
+    loadSounds();
+    return () => {
+      successSound.current?.unloadAsync();
+      failureSound.current?.unloadAsync();
+    };
+  }, []);
+
+  // Update the checkPronunciation function to play sounds
+  const checkPronunciation = async (spokenText: string) => {
     if (!spokenText || gameState !== 'playing') return;
     
     const spokenLower = spokenText.toLowerCase().trim();
@@ -401,6 +436,13 @@ export default function LinguaSlideScreen() {
       const targetLower = currentWord.word.toLowerCase().trim();
       
       const isCorrect = spokenLower === targetLower || isSimilarPronunciation(spokenLower, targetLower);
+
+      // Play appropriate sound
+      if (isCorrect) {
+        successSound.current?.replayAsync();
+      } else {
+        failureSound.current?.replayAsync();
+      }
 
       const updatedWordList = prevWordList.map((word, index) => {
         if (index === currentWordIndex) {
