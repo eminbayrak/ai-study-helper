@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.settings import get_settings
-from app.api.routes import text_processing, image_processing
+from app.api.routes import text_processing, image_processing, word_generation
 
 settings = get_settings()
 
@@ -10,7 +10,7 @@ app = FastAPI(title="AI Study Helper API")
 # Updated CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8081", "http://127.0.0.1:8081"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -20,4 +20,5 @@ app.add_middleware(
 
 # Include routers
 app.include_router(text_processing.router, prefix="/api", tags=["text"])
-app.include_router(image_processing.router, prefix="/api", tags=["image"]) 
+app.include_router(image_processing.router, prefix="/api", tags=["image"])
+app.include_router(word_generation.router, prefix="/api", tags=["words"]) 

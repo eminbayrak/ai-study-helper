@@ -2,6 +2,7 @@ import aiohttp
 from app.core.settings import get_settings
 import json
 import tiktoken  # Add this import for token counting
+from typing import Dict, List
 
 settings = get_settings()
 
@@ -138,3 +139,92 @@ class OpenRouterService:
         except Exception as e:
             print(f"Error in generate_questions: {str(e)}")
             raise e 
+
+    async def generate_word_sets(self, prompt: str) -> Dict[str, List[str]]:
+        try:
+            # Update the prompt to specifically request 10 words per category
+            prompt = """Generate exactly 10 words for each category:
+            1. Easy: 10 common everyday words (1-2 syllables)
+            2. Medium: 10 moderately difficult words (2-3 syllables)
+            3. Hard: 10 advanced vocabulary words (3+ syllables)
+            
+            Format the response as a JSON object with three arrays: easy, medium, and hard.
+            Each array must contain exactly 10 words.
+            Do not include definitions or explanations."""
+
+            payload = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.7,
+                "max_tokens": 300,  # Increased token limit for more words
+                "stream": False
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=self.headers,
+                    json=payload
+                ) as response:
+                    response_text = await response.text()
+                    
+                    if response.status != 200:
+                        raise Exception(f"OpenRouter API error: {response_text}")
+                    
+                    data = json.loads(response_text)
+                    if not data.get('choices'):
+                        raise Exception("No choices in API response")
+                    
+                    content = data['choices'][0]['message']['content']
+                    try:
+                        word_sets = json.loads(content)
+                    except json.JSONDecodeError:
+                        word_sets = self._parse_word_response(content)
+                    
+                    # Ensure exactly 10 words per category
+                    default_words = {
+                        "easy": ["cat", "dog", "book", "tree", "house", "ball", "car", "bird", "fish", "door"],
+                        "medium": ["rabbit", "pencil", "window", "garden", "morning", "teacher", "monkey", "chicken", "basket", "bottle"],
+                        "hard": ["vocabulary", "incredible", "mysterious", "fascinating", "determination", "extraordinary", "sophisticated", "revolutionary", "philosophical", "magnificent"]
+                    }
+
+                    # Ensure each category has exactly 10 words
+                    for category in ["easy", "medium", "hard"]:
+                        current_words = word_sets.get(category, [])
+                        # If we have more than 10 words, take the first 10
+                        if len(current_words) > 10:
+                            word_sets[category] = current_words[:10]
+                        # If we have less than 10 words, fill with defaults
+                        elif len(current_words) < 10:
+                            word_sets[category] = current_words + default_words[category][len(current_words):10]
+
+                    return word_sets
+
+        except Exception as e:
+            print(f"Error generating word sets: {str(e)}")
+            raise e
+
+    def _parse_word_response(self, content: str) -> Dict[str, List[str]]:
+        """Fallback method to parse non-JSON responses"""
+        result = {"easy": [], "medium": [], "hard": []}
+        current_category = None
+        
+        for line in content.split('\n'):
+            line = line.strip().lower()
+            if 'easy:' in line:
+                current_category = 'easy'
+            elif 'medium:' in line:
+                current_category = 'medium'
+            elif 'hard:' in line:
+                current_category = 'hard'
+            elif current_category and line:
+                # Extract words, removing numbers and punctuation
+                words = [w.strip('1234567890.:-)( ') for w in line.split(',')]
+                words = [w for w in words if w and not w.startswith('-')]
+                result[current_category].extend(words)
+        
+        # Ensure each category has exactly 10 words
+        for category in result:
+            result[category] = result[category][:10]
+        
+        return result 

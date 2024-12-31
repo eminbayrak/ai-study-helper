@@ -1,33 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, StyleSheet, Pressable, Platform, ActivityIndicator, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Voice from '@react-native-voice/voice';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
+import ENV from '../../env';
 
 declare global {
   interface Window {
-    webkitSpeechRecognition: new () => {
-      continuous: boolean;
-      interimResults: boolean;
-      onstart: () => void;
-      onend: () => void;
-      onerror: (event: { error: string }) => void;
-      onresult: (event: { results: { transcript: string }[][] }) => void;
-      start: () => void;
-      stop: () => void;
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
     };
   }
 }
 
-// Word sets with increasing difficulty
-const WORD_SETS = {
-  easy: ['cat', 'dog', 'fish', 'bird', 'duck', 'cow', 'pig', 'hen', 'rat', 'goat'],
-  medium: ['elephant', 'giraffe', 'penguin', 'dolphin', 'octopus', 'turtle', 'rabbit', 'monkey', 'tiger', 'zebra'],
-  hard: ['hippopotamus', 'rhinoceros', 'chimpanzee', 'kangaroo', 'crocodile', 'butterfly', 'dragonfly', 'pelican', 'flamingo', 'penguin']
-};
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  onstart: () => void;
+  onend: () => void;
+  onerror: (event: { error: string }) => void;
+  onresult: (event: { results: { transcript: string }[][] }) => void;
+  start: () => void;
+  stop: () => void;
+}
 
+// Update the types
 type Difficulty = 'easy' | 'medium' | 'hard';
 
 type WordStatus = {
@@ -36,28 +35,58 @@ type WordStatus = {
   unlocked: boolean;
 };
 
+type WordSets = {
+  [key in Difficulty]: string[];
+};
+
 export default function LinguaSlideScreen() {
   const { colors } = useThemeColor();
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [wordList, setWordList] = useState<WordStatus[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const webSpeechRef = useRef<any>(null);
 
-  useEffect(() => {
-    const initializeWords = () => {
-      const initialWords = WORD_SETS[difficulty].map((word, index) => ({
+  // Fetch words from API
+  const fetchWords = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${ENV.API_URL}/words/random`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch words');
+      }
+
+      const data: WordSets = await response.json();
+      
+      // Initialize word list with the fetched words
+      const initialWords = data[difficulty].map((word, index) => ({
         word,
         completed: false,
-        unlocked: index === 0 // Only the first word is unlocked initially
+        unlocked: index === 0
       }));
+      
       setWordList(initialWords);
       setProgress(0);
-    };
+    } catch (error) {
+      console.error('Error fetching words:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load words. Please try again.',
+        [{ text: 'OK', onPress: () => {} }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    initializeWords();
+  // Fetch words when difficulty changes
+  useEffect(() => {
+    fetchWords();
   }, [difficulty]);
 
+  // Voice recognition setup
   useEffect(() => {
     if (Platform.OS === 'web') {
       if ('webkitSpeechRecognition' in window) {
@@ -70,7 +99,6 @@ export default function LinguaSlideScreen() {
         recognition.onresult = (event) => {
           const last = event.results.length - 1;
           const text = event.results[last][0].transcript;
-          console.log('Speech detected (web):', text);
           checkPronunciation(text);
         };
         webSpeechRef.current = recognition;
@@ -80,7 +108,6 @@ export default function LinguaSlideScreen() {
       Voice.onSpeechEnd = () => console.log('Speech recognition ended (mobile)');
       Voice.onSpeechError = (e) => console.error('Speech recognition error (mobile):', e);
       Voice.onSpeechResults = (e: any) => {
-        console.log('Speech detected (mobile):', e.value[0]);
         checkPronunciation(e.value[0]);
       };
     }
@@ -115,22 +142,22 @@ export default function LinguaSlideScreen() {
   };
 
   const checkPronunciation = (spokenText: string) => {
+    const spokenLower = spokenText.toLowerCase().trim();
+    console.log('Player spoke:', spokenLower);
+    
     setWordList((prevWordList) => {
       const currentWordIndex = prevWordList.findIndex(w => w.unlocked && !w.completed);
 
       if (currentWordIndex === -1) {
-        console.log('All words completed - resetting game');
-        resetGame();
+        console.log('All words completed - fetching new words');
+        fetchWords();
         return prevWordList;
       }
 
       const currentWord = prevWordList[currentWordIndex];
-      const spokenLower = spokenText.toLowerCase().trim();
       const targetLower = currentWord.word.toLowerCase().trim();
 
       if (spokenLower === targetLower) {
-        console.log('Match found! Word pronounced correctly');
-
         const updatedWordList = prevWordList.map((word, index) => {
           if (index === currentWordIndex) {
             return { ...word, completed: true };
@@ -141,23 +168,11 @@ export default function LinguaSlideScreen() {
           return word;
         });
 
-        setProgress((currentWordIndex + 1) * 10);
+        setProgress((currentWordIndex + 1) * 10); // Changed from 20 to 10 since we now have 10 words
         return updatedWordList;
-      } else {
-        console.log('No match found, try again');
-        return prevWordList;
       }
+      return prevWordList;
     });
-  };
-
-  const resetGame = () => {
-    const resetWords = WORD_SETS[difficulty].map((word, index) => ({
-      word,
-      completed: false,
-      unlocked: index === 0
-    }));
-    setWordList(resetWords);
-    setProgress(0);
   };
 
   return (
@@ -169,60 +184,69 @@ export default function LinguaSlideScreen() {
         </View>
       </View>
 
-      <View style={styles.wordList}>
-        {wordList.map((item, index) => (
-          <View
-            key={index}
-            style={[
-              styles.wordCard,
-              !item.unlocked && styles.lockedCard,
-              { backgroundColor: colors.surface }
-            ]}
-          >
-            <ThemedText style={styles.word}>{item.word}</ThemedText>
-            {item.completed && <MaterialIcons name="check-circle" size={24} color="green" />}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <ThemedText style={styles.loadingText}>Loading words...</ThemedText>
+        </View>
+      ) : (
+        <>
+          <View style={styles.wordList}>
+            {wordList.map((item, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.wordCard,
+                  !item.unlocked && styles.lockedCard,
+                  { backgroundColor: colors.surface }
+                ]}
+              >
+                <ThemedText style={styles.word}>{item.word}</ThemedText>
+                {item.completed && <MaterialIcons name="check-circle" size={24} color="green" />}
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
 
-      <View style={styles.controls}>
-        <Pressable
-          style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
-          onPress={toggleListening}
-        >
-          <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={24} color="white" />
-        </Pressable>
+          <View style={styles.controls}>
+            <Pressable
+              style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
+              onPress={toggleListening}
+            >
+              <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={24} color="white" />
+            </Pressable>
 
-        <Pressable
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          onPress={resetGame}
-        >
-          <MaterialIcons name="refresh" size={24} color="white" />
-        </Pressable>
-      </View>
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.primary }]}
+              onPress={fetchWords}
+            >
+              <MaterialIcons name="refresh" size={24} color="white" />
+            </Pressable>
+          </View>
 
-      <View style={styles.difficultyControls}>
-        {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => (
-          <Pressable
-            key={level}
-            style={[
-              styles.difficultyButton,
-              { 
-                backgroundColor: difficulty === level ? colors.primary : colors.surface,
-                borderColor: colors.primary
-              }
-            ]}
-            onPress={() => setDifficulty(level)}
-          >
-            <ThemedText style={[
-              styles.difficultyText,
-              difficulty === level && { color: 'white' }
-            ]}>
-              {level.charAt(0).toUpperCase() + level.slice(1)}
-            </ThemedText>
-          </Pressable>
-        ))}
-      </View>
+          <View style={styles.difficultyControls}>
+            {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => (
+              <Pressable
+                key={level}
+                style={[
+                  styles.difficultyButton,
+                  { 
+                    backgroundColor: difficulty === level ? colors.primary : colors.surface,
+                    borderColor: colors.primary
+                  }
+                ]}
+                onPress={() => setDifficulty(level)}
+              >
+                <ThemedText style={[
+                  styles.difficultyText,
+                  difficulty === level && { color: 'white' }
+                ]}>
+                  {level.charAt(0).toUpperCase() + level.slice(1)}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      )}
     </ThemedView>
   );
 }
@@ -246,5 +270,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-  difficultyText: { fontSize: 14, fontWeight: '500' }
+  difficultyText: { fontSize: 14, fontWeight: '500' },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: '500',
+  },
 });
