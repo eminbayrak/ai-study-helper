@@ -31,10 +31,12 @@ type Difficulty = 'easy' | 'medium' | 'hard';
 
 type WordStatus = {
   word: string;
+  phonetic: string;
   completed: boolean;
   unlocked: boolean;
   spokenWord?: string;
   skipped?: boolean;
+  attempts?: number;
 };
 
 type WordSets = {
@@ -76,9 +78,15 @@ export default function LinguaSlideScreen() {
 
       const data: WordSets = await response.json();
       
-      // Initialize word list with the fetched words
+      // Initialize word list with more readable phonetic guides
       const initialWords = data[difficulty].map((word, index) => ({
         word,
+        // Create a more intuitive pronunciation guide
+        phonetic: word.toLowerCase()
+          .replace(/([aeiou])/g, '$1·') // Add dots after vowels
+          .split('')
+          .join('‧') // Add middle dots between all letters
+          .replace(/‧$/,''), // Remove trailing dot
         completed: false,
         unlocked: index === 0
       }));
@@ -282,24 +290,23 @@ export default function LinguaSlideScreen() {
     }
     setIsListening(false);
     
-    // Calculate game statistics
+    // Calculate statistics
     const completedWords = wordList.filter(w => w.completed && !w.skipped).length;
-    const skippedWords = wordList.filter(w => w.skipped).length;
-    const totalAttempts = wordList.reduce((acc, word) => acc + (word.spokenWord ? 1 : 0), 0);
-    const timeSpent = Math.max(1, 30 - timeLeft);
-    
-    // Calculate accuracy based on completed words vs attempts
+    const totalAttempts = wordList.reduce((acc, word) => acc + (word.attempts || 0), 0);
+    const timeSpent = 30 - timeLeft;
+
+    // Calculate accuracy
     const accuracy = totalAttempts > 0 
-      ? (completedWords / totalAttempts) * 100 
+      ? Math.round((completedWords / totalAttempts) * 100)
       : 0;
 
-    // Calculate score components with adjusted weights and skip penalty
-    const speedBonus = Math.max(0, 30 - timeSpent) * 10; // Up to 300 points for speed
-    const accuracyBonus = Math.round((accuracy / 100) * 300); // Up to 300 points for accuracy
-    const completionBonus = completedWords * 40; // 40 points per word, up to 400 points
-    const skipPenalty = skippedWords * 20; // -20 points per skipped word
+    // Calculate score components
+    const wordPoints = completedWords * 50;  // 50 points per completed word (max 500)
+    const timeBonus = Math.max(0, Math.round((30 - timeSpent) * 5)); // 5 points per second saved (max 150)
+    const accuracyBonus = Math.round((accuracy / 100) * 100); // Up to 100 points for accuracy
 
-    const totalScore = Math.max(0, speedBonus + accuracyBonus + completionBonus - skipPenalty);
+    // Calculate final score
+    const totalScore = Math.max(0, wordPoints + timeBonus + accuracyBonus);
 
     const result = {
       score: totalScore,
@@ -313,15 +320,10 @@ export default function LinguaSlideScreen() {
       details: {
         completedWords,
         totalAttempts,
-        speedBonus,
-        accuracyBonus,
-        completionBonus,
-        wordStatuses: wordList.map(w => ({
-          word: w.word,
-          completed: w.completed,
-          spokenWord: w.spokenWord,
-          unlocked: w.unlocked
-        }))
+        wordPoints: `${wordPoints} (${completedWords} words × 50)`,
+        timeBonus: `${timeBonus} (${30 - timeSpent} seconds saved × 5)`,
+        accuracyBonus: `${accuracyBonus} (${accuracy}% of 100)`,
+        finalScore: totalScore
       }
     });
 
@@ -330,95 +332,77 @@ export default function LinguaSlideScreen() {
 
   // Add this helper function for word comparison
   const isSimilarPronunciation = (spoken: string, target: string) => {
-    // Common speech recognition substitutions
+    // Common speech recognition substitutions and homophones
     const substitutions: { [key: string]: string[] } = {
+      // Numbers and their word forms
       'tree': ['3', 'three'],
-      'sun': ['son', 'sung'],
-      'four': ['for', '4'],
+      'four': ['for', '4', 'fore'],
       'two': ['to', 'too', '2'],
-      'ate': ['eight', '8'],
-      'see': ['sea', 'c'],
-      'ball': ['bawl'],
       'one': ['won', '1'],
-      'five': ['5'],
+      'eight': ['ate', '8'],
       'six': ['sicks', '6'],
-      'seven': ['7'],
-      'nine': ['9'],
-      'ten': ['10'],
-      'zero': ['0'],
+      
+      // Common homophones
+      'red': ['read', 'red'],
+      'read': ['red', 'reed'],
+      'blue': ['blew'],
+      'sea': ['see', 'c'],
+      'eye': ['i'],
+      'hi': ['high'],
+      'hire': ['higher'],
+      'hour': ['our'],
+      'meat': ['meet', 'mete'],
       'write': ['right', 'rite'],
+      'new': ['knew'],
+      'know': ['no'],
+      'nose': ['knows'],
+      'way': ['weigh', 'whey'],
+      'wait': ['weight'],
+      'wood': ['would'],
+      'hear': ['here'],
       'there': ['their', 'they\'re'],
-      'here': ['hear'],
-      'wear': ['where', 'ware'],
-      'bear': ['bare'],
       'pair': ['pear', 'pare'],
+      'bare': ['bear'],
+      'wear': ['where'],
       'flour': ['flower'],
-      'meet': ['meat'],
-      'hole': ['whole'],
-      'knight': ['night'],
-      'knows': ['nose'],
-      'weight': ['wait'],
-      'buy': ['by', 'bye'],
-      'sale': ['sail'],
-      'cent': ['sent', 'scent'],
-      'weather': ['whether'],
-      'principal': ['principle'],
-      'capital': ['capitol'],
-      'allowed': ['aloud'],
-      'affect': ['effect'],
-      'accept': ['except'],
-      'already': ['all ready'],
-      'desert': ['dessert'],
-      'than': ['then'],
-      'your': ['you\'re', 'yore'],
-      'its': ['it\'s'],
-      'whose': ['who\'s'],
-      'peace': ['piece'],
-      'brake': ['break'],
-      'cite': ['site', 'sight'],
-      'complement': ['compliment'],
-      'council': ['counsel'],
-      'die': ['dye'],
-      'fair': ['fare'],
-      'genes': ['jeans'],
       'grown': ['groan'],
-      'higher': ['hire'],
-      'idle': ['idol'],
-      'in': ['inn'],
+      'hole': ['whole'],
       'made': ['maid'],
       'mail': ['male'],
-      'morning': ['mourning'],
-      'passed': ['past'],
-      'patients': ['patience'],
-      'presence': ['presents'],
-      'profit': ['prophet'],
       'rain': ['reign', 'rein'],
       'raise': ['rays', 'raze'],
       'role': ['roll'],
+      'sale': ['sail'],
       'scene': ['seen'],
-      'stationary': ['stationery'],
       'steal': ['steel'],
-      'suite': ['sweet'],
-      'their': ['there', 'they\'re'],
+      'sweet': ['suite'],
+      'tail': ['tale'],
       'threw': ['through'],
-      'throne': ['thrown'],
       'tide': ['tied'],
-      'time': ['thyme'],
       'toe': ['tow'],
-      'waist': ['waste'],
-      'way': ['weigh', 'whey'],
       'weak': ['week'],
       'which': ['witch'],
-      'would': ['wood'],
-      'you\'re': ['your'],
-      // Add more common substitutions as needed
+      
+      // Similar sounding words
+      'accept': ['except'],
+      'affect': ['effect'],
+      'allowed': ['aloud'],
+      'capital': ['capitol'],
+      'principal': ['principle'],
+      'than': ['then'],
+      'weather': ['whether'],
     };
 
     // Direct match
     if (spoken === target) return true;
     
-    // Check substitutions
+    // Check both ways - target might be either the key or the value
     if (substitutions[target] && substitutions[target].includes(spoken)) {
+      return true;
+    }
+    
+    // Check reverse mapping (when spoken word is the key)
+    if (substitutions[spoken] && substitutions[spoken].includes(target)) {
       return true;
     }
 
@@ -439,22 +423,15 @@ export default function LinguaSlideScreen() {
       const currentWord = prevWordList[currentWordIndex];
       const targetLower = currentWord.word.toLowerCase().trim();
       
-      const isCorrect = isSimilarPronunciation(spokenLower, targetLower);
-
-      console.log('Comparing:', {
-        spoken: spokenLower,
-        target: targetLower,
-        isMatch: isCorrect,
-        currentIndex: currentWordIndex,
-        currentCompleted: currentWord.completed
-      });
+      const isCorrect = spokenLower === targetLower || isSimilarPronunciation(spokenLower, targetLower);
 
       const updatedWordList = prevWordList.map((word, index) => {
         if (index === currentWordIndex) {
           return {
             ...word,
             spokenWord: spokenLower,
-            completed: isCorrect
+            completed: isCorrect,
+            attempts: (word.attempts || 0) + 1
           };
         }
         if (index === currentWordIndex + 1 && isCorrect) {
@@ -464,12 +441,10 @@ export default function LinguaSlideScreen() {
       });
 
       if (isCorrect) {
-        console.log('Word completed:', currentWord.word);
         setProgress((currentWordIndex + 1) * 10);
         
         const allCompleted = updatedWordList.every(w => w.completed);
         if (allCompleted) {
-          console.log('All words completed! Ending game...');
           setTimeout(() => endGame(), 500);
         }
       }
@@ -489,25 +464,49 @@ export default function LinguaSlideScreen() {
   const ScoreBoard = ({ result }: { result: GameResult }) => {
     const { colors } = useThemeColor();
     
+    // Group attempts by word to show pronunciation feedback
+    const pronunciationFeedback = wordList
+      .filter(word => (word.attempts || 0) > 1 || !word.completed) // Only show words with multiple attempts or failures
+      .map(word => ({
+        word: word.word,
+        attempts: word.attempts || 0,
+        completed: word.completed,
+        spokenWord: word.spokenWord, // What the user actually said
+      }))
+      .sort((a, b) => b.attempts - a.attempts); // Sort by most attempts first
+
     return (
       <View style={[styles.scoreBoard, { backgroundColor: colors.surface }]}>
-        <ThemedText style={styles.scoreBoardTitle}>Game Over!</ThemedText>
-        <View style={styles.scoreRow}>
-          <ThemedText style={styles.scoreLabel}>Final Score:</ThemedText>
-          <ThemedText style={styles.scoreValue}>{Math.round(result.score) || 0}</ThemedText>
-        </View>
-        <View style={styles.scoreRow}>
-          <ThemedText style={styles.scoreLabel}>Words Completed:</ThemedText>
-          <ThemedText style={styles.scoreValue}>{result.wordsCompleted}/10</ThemedText>
-        </View>
-        <View style={styles.scoreRow}>
-          <ThemedText style={styles.scoreLabel}>Time Spent:</ThemedText>
-          <ThemedText style={styles.scoreValue}>{result.timeSpent}s</ThemedText>
-        </View>
-        <View style={styles.scoreRow}>
-          <ThemedText style={styles.scoreLabel}>Accuracy:</ThemedText>
-          <ThemedText style={styles.scoreValue}>{Math.round(result.accuracy || 0)}%</ThemedText>
-        </View>
+        <ThemedText style={styles.scoreBoardTitle}>Practice Summary</ThemedText>
+        
+        {pronunciationFeedback.length > 0 ? (
+          <>
+            <ThemedText style={styles.feedbackHeader}>Words to Practice:</ThemedText>
+            {pronunciationFeedback.map((item, index) => (
+              <View key={index} style={styles.wordFeedbackRow}>
+                <View style={styles.wordStatusContainer}>
+                  <ThemedText style={styles.wordText}>{item.word}</ThemedText>
+                  {item.spokenWord && item.spokenWord !== item.word && (
+                    <ThemedText style={styles.spokenWordText}>
+                      (you said: {item.spokenWord})
+                    </ThemedText>
+                  )}
+                  <MaterialIcons 
+                    name={item.completed ? "check-circle" : "error"} 
+                    size={20} 
+                    color={item.completed ? "green" : "#FF4444"} 
+                  />
+                </View>
+                <ThemedText style={styles.attemptsText}>
+                  {item.attempts} {item.attempts === 1 ? 'attempt' : 'attempts'}
+                </ThemedText>
+              </View>
+            ))}
+          </>
+        ) : (
+          <ThemedText style={styles.noAttemptsText}>Perfect pronunciation! No words to practice.</ThemedText>
+        )}
+
         <Pressable
           style={[styles.playAgainButton, { backgroundColor: colors.primary }]}
           onPress={() => {
@@ -515,7 +514,12 @@ export default function LinguaSlideScreen() {
             setGameResult(null);
           }}
         >
-          <ThemedText style={styles.playAgainText}>Play Again</ThemedText>
+          <View style={styles.startingContainer}>
+            <MaterialIcons name="replay" size={24} color="white" />
+            <ThemedText style={[styles.playAgainText, { marginLeft: 10 }]}>
+              Try Again
+            </ThemedText>
+          </View>
         </Pressable>
       </View>
     );
@@ -666,6 +670,57 @@ export default function LinguaSlideScreen() {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    wordContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    phonetic: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+    },
+    feedbackHeader: {
+      fontSize: 18,
+      fontWeight: '600',
+      marginTop: 20,
+      marginBottom: 12,
+      alignSelf: 'flex-start',
+    },
+    wordFeedbackRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+    },
+    wordStatusContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    wordText: {
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    attemptsText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    noAttemptsText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      marginTop: 20,
+    },
+    spokenWordText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+      marginLeft: 8,
+    },
   });
 
   return (
@@ -713,7 +768,12 @@ export default function LinguaSlideScreen() {
                 </ThemedText>
               </View>
             ) : (
-              <ThemedText style={styles.startButtonText}>Start Game</ThemedText>
+              <View style={styles.startingContainer}>
+                <MaterialIcons name="play-arrow" size={24} color="white" />
+                <ThemedText style={[styles.startButtonText, { marginLeft: 10 }]}>
+                  Start Game
+                </ThemedText>
+              </View>
             )}
           </Pressable>
         </View>
@@ -745,7 +805,10 @@ export default function LinguaSlideScreen() {
                       { backgroundColor: colors.surface }
                     ]}
                   >
-                    <ThemedText style={styles.word}>{item.word}</ThemedText>
+                    <View style={styles.wordContainer}>
+                      <ThemedText style={styles.word}>{item.word}</ThemedText>
+                      <ThemedText style={styles.phonetic}>({item.phonetic})</ThemedText>
+                    </View>
                     {item.completed && (
                       <MaterialIcons 
                         name={item.skipped ? "close" : "check-circle"} 
