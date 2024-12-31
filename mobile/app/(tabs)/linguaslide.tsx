@@ -6,6 +6,7 @@ import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import ENV from '../../env';
+import * as Speech from 'expo-speech';
 
 declare global {
   interface Window {
@@ -376,6 +377,7 @@ export default function LinguaSlideScreen() {
       'scene': ['seen'],
       'steal': ['steel'],
       'sweet': ['suite'],
+      'sun': ['son'],
       'tail': ['tale'],
       'threw': ['through'],
       'tide': ['tied'],
@@ -486,6 +488,12 @@ export default function LinguaSlideScreen() {
             {pronunciationFeedback.map((item, index) => (
               <View key={index} style={[styles.wordFeedbackRow, { borderBottomColor: colors.border }]}>
                 <View style={styles.wordStatusContainer}>
+                  <Pressable
+                    onPress={() => Speech.speak(item.word, { language: 'en' })}
+                    style={styles.speakerButton}
+                  >
+                    <MaterialIcons name="volume-up" size={20} color={colors.primary} />
+                  </Pressable>
                   <ThemedText style={[styles.wordText, { color: colors.text }]}>{item.word}</ThemedText>
                   {item.skipped ? (
                     <ThemedText style={[styles.spokenWordText, { color: colors.text }]}>
@@ -726,6 +734,10 @@ export default function LinguaSlideScreen() {
       fontStyle: 'italic',
       marginLeft: 8,
     },
+    speakerButton: {
+      padding: 4,
+      marginLeft: 4,
+    },
   });
 
   return (
@@ -817,6 +829,12 @@ export default function LinguaSlideScreen() {
                     ]}
                   >
                     <View style={styles.wordContainer}>
+                      <Pressable
+                        onPress={() => Speech.speak(item.word, { language: 'en' })}
+                        style={styles.speakerButton}
+                      >
+                        <MaterialIcons name="volume-up" size={20} color={colors.primary} />
+                      </Pressable>
                       <ThemedText style={[styles.word, { color: colors.text }]}>
                         {item.word}
                       </ThemedText>
