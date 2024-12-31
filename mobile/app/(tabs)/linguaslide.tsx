@@ -62,6 +62,7 @@ export default function LinguaSlideScreen() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
 
   // Fetch words from API
   const fetchWords = async () => {
@@ -220,41 +221,46 @@ export default function LinguaSlideScreen() {
   };
 
   const startGame = async () => {
-    await fetchWords();
-    setGameState('playing');
-    setTimeLeft(30);
-    setProgress(0);
-    
-    // Reset any existing speech recognition
-    if (Platform.OS === 'web') {
-      if (webSpeechRef.current) {
-        webSpeechRef.current.stop();
-        setTimeout(() => {
-          webSpeechRef.current?.start();
-          setIsListening(true);
-        }, 100);
-      }
-    } else {
-      try {
-        await Voice.stop();
-        setTimeout(async () => {
-          await Voice.start('en-US');
-          setIsListening(true);
-        }, 100);
-      } catch (e) {
-        console.error('Error starting voice recognition:', e);
-      }
-    }
-    
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          endGame();
-          return 0;
+    setIsStarting(true);
+    try {
+      await fetchWords();
+      setGameState('playing');
+      setTimeLeft(30);
+      setProgress(0);
+      
+      // Reset any existing speech recognition
+      if (Platform.OS === 'web') {
+        if (webSpeechRef.current) {
+          webSpeechRef.current.stop();
+          setTimeout(() => {
+            webSpeechRef.current?.start();
+            setIsListening(true);
+          }, 100);
         }
-        return prev - 1;
-      });
-    }, 1000);
+      } else {
+        try {
+          await Voice.stop();
+          setTimeout(async () => {
+            await Voice.start('en-US');
+            setIsListening(true);
+          }, 100);
+        } catch (e) {
+          console.error('Error starting voice recognition:', e);
+        }
+      }
+      
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            endGame();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   const endGame = () => {
@@ -507,7 +513,6 @@ export default function LinguaSlideScreen() {
           onPress={() => {
             setGameState('ready');
             setGameResult(null);
-            startGame();
           }}
         >
           <ThemedText style={styles.playAgainText}>Play Again</ThemedText>
@@ -546,7 +551,12 @@ export default function LinguaSlideScreen() {
     },
     controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 20 },
     button: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
-    difficultyControls: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 10 },
+    difficultyControls: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 10,
+      marginVertical: 40,
+    },
     difficultyButton: {
       paddingHorizontal: 15,
       paddingVertical: 8,
@@ -645,94 +655,25 @@ export default function LinguaSlideScreen() {
       fontSize: 18,
       fontWeight: 'bold',
     },
+    startScreen: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingBottom: 100,
+    },
+    startingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.header}>
-        <ThemedText style={styles.title}>Pronunciation Game</ThemedText>
-        {gameState === 'playing' && (
-          <ThemedText style={styles.timer}>
-            Time: {timeLeft}s
-          </ThemedText>
-        )}
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
-        </View>
-      </View>
-
-      {gameState === 'finished' && gameResult ? (
-        <ScoreBoard result={gameResult} />
-      ) : isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <ThemedText style={styles.loadingText}>Loading words...</ThemedText>
-        </View>
-      ) : (
-        <>
-          <View style={styles.wordList}>
-            {wordList.map((item, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.wordCard,
-                  !item.unlocked && styles.lockedCard,
-                  { backgroundColor: colors.surface }
-                ]}
-              >
-                <ThemedText style={styles.word}>{item.word}</ThemedText>
-                {item.completed && (
-                  <MaterialIcons 
-                    name={item.skipped ? "close" : "check-circle"} 
-                    size={24} 
-                    color={item.skipped ? "#FF4444" : "green"} 
-                    style={styles.checkIcon}
-                  />
-                )}
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.controls}>
-            <Pressable
-              style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
-              onPress={toggleListening}
-            >
-              <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={24} color="white" />
-            </Pressable>
-
-            <Pressable
-              style={[styles.button, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                // Skip current word
-                setWordList((prevWordList) => {
-                  const currentWordIndex = prevWordList.findIndex(w => w.unlocked && !w.completed);
-                  if (currentWordIndex === -1) return prevWordList;
-
-                  return prevWordList.map((word, index) => {
-                    if (index === currentWordIndex) {
-                      return { ...word, completed: true, skipped: true };
-                    }
-                    if (index === currentWordIndex + 1) {
-                      return { ...word, unlocked: true };
-                    }
-                    return word;
-                  });
-                });
-                setProgress((prev) => Math.min(100, prev + 10));
-              }}
-            >
-              <MaterialIcons name="skip-next" size={24} color="white" />
-            </Pressable>
-
-            <Pressable
-              style={[styles.button, { backgroundColor: colors.primary }]}
-              onPress={fetchWords}
-            >
-              <MaterialIcons name="refresh" size={24} color="white" />
-            </Pressable>
-          </View>
-
+      {gameState === 'ready' ? (
+        // Initial screen with difficulty selection and start button
+        <View style={styles.startScreen}>
+          <ThemedText style={styles.title}>Pronunciation Game</ThemedText>
           <View style={styles.difficultyControls}>
             {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => (
               <Pressable
@@ -755,16 +696,113 @@ export default function LinguaSlideScreen() {
               </Pressable>
             ))}
           </View>
-        </>
-      )}
+          <Pressable
+            style={[
+              styles.startButton,
+              { backgroundColor: colors.primary },
+              isStarting && { opacity: 0.7 }
+            ]}
+            onPress={startGame}
+            disabled={isStarting}
+          >
+            {isStarting ? (
+              <View style={styles.startingContainer}>
+                <ActivityIndicator color="white" />
+                <ThemedText style={[styles.startButtonText, { marginLeft: 10 }]}>
+                  Starting...
+                </ThemedText>
+              </View>
+            ) : (
+              <ThemedText style={styles.startButtonText}>Start Game</ThemedText>
+            )}
+          </Pressable>
+        </View>
+      ) : gameState === 'playing' ? (
+        // Game screen
+        <>
+          <View style={styles.header}>
+            <ThemedText style={styles.title}>Pronunciation Game</ThemedText>
+            <ThemedText style={styles.timer}>Time: {timeLeft}s</ThemedText>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
+            </View>
+          </View>
 
-      {gameState === 'ready' && (
-        <Pressable
-          style={styles.startButton}
-          onPress={startGame}
-        >
-          <ThemedText style={styles.startButtonText}>Start Game</ThemedText>
-        </Pressable>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <ThemedText style={styles.loadingText}>Loading words...</ThemedText>
+            </View>
+          ) : (
+            <>
+              <View style={styles.wordList}>
+                {wordList.map((item, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.wordCard,
+                      !item.unlocked && styles.lockedCard,
+                      { backgroundColor: colors.surface }
+                    ]}
+                  >
+                    <ThemedText style={styles.word}>{item.word}</ThemedText>
+                    {item.completed && (
+                      <MaterialIcons 
+                        name={item.skipped ? "close" : "check-circle"} 
+                        size={24} 
+                        color={item.skipped ? "#FF4444" : "green"} 
+                        style={styles.checkIcon}
+                      />
+                    )}
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.controls}>
+                <Pressable
+                  style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
+                  onPress={toggleListening}
+                >
+                  <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={24} color="white" />
+                </Pressable>
+
+                <Pressable
+                  style={[styles.button, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    // Skip current word
+                    setWordList((prevWordList) => {
+                      const currentWordIndex = prevWordList.findIndex(w => w.unlocked && !w.completed);
+                      if (currentWordIndex === -1) return prevWordList;
+
+                      return prevWordList.map((word, index) => {
+                        if (index === currentWordIndex) {
+                          return { ...word, completed: true, skipped: true };
+                        }
+                        if (index === currentWordIndex + 1) {
+                          return { ...word, unlocked: true };
+                        }
+                        return word;
+                      });
+                    });
+                    setProgress((prev) => Math.min(100, prev + 10));
+                  }}
+                >
+                  <MaterialIcons name="skip-next" size={24} color="white" />
+                </Pressable>
+
+                <Pressable
+                  style={[styles.button, { backgroundColor: colors.primary }]}
+                  onPress={fetchWords}
+                >
+                  <MaterialIcons name="refresh" size={24} color="white" />
+                </Pressable>
+              </View>
+            </>
+          )}
+        </>
+      ) : (
+        // Game over screen
+        <ScoreBoard result={gameResult!} />
       )}
     </ThemedView>
   );
