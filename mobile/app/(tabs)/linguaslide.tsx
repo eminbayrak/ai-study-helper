@@ -131,12 +131,6 @@ export default function LinguaSlideScreen() {
         }
       } else {
         setIsListening(true);
-        // Clear the previous spoken word for the current active word
-        setWordList(prevWordList => prevWordList.map(word => ({
-          ...word,
-          spokenWord: word.unlocked && !word.completed ? undefined : word.spokenWord
-        })));
-        
         if (Platform.OS === 'web') {
           webSpeechRef.current?.start();
         } else {
@@ -149,6 +143,8 @@ export default function LinguaSlideScreen() {
   };
 
   const checkPronunciation = (spokenText: string) => {
+    if (!spokenText) return; // Guard against empty speech input
+    
     const spokenLower = spokenText.toLowerCase().trim();
     console.log('Player spoke:', spokenLower);
     
@@ -161,30 +157,28 @@ export default function LinguaSlideScreen() {
         return prevWordList;
       }
 
-      // Clear any previous spoken words for incomplete words
+      const currentWord = prevWordList[currentWordIndex];
+      const targetLower = currentWord.word.toLowerCase().trim();
+
+      // Always update the current word with the spoken attempt
       const updatedWordList = prevWordList.map((word, index) => {
-        if (index > currentWordIndex) {
-          // Clear future words' spoken attempts
-          return { ...word, spokenWord: undefined };
+        if (index === currentWordIndex) {
+          return {
+            ...word,
+            spokenWord: spokenLower,
+            completed: spokenLower === targetLower,
+          };
+        }
+        // Only unlock next word if current word is correctly pronounced
+        if (index === currentWordIndex + 1 && spokenLower === targetLower) {
+          return { ...word, unlocked: true };
         }
         return word;
       });
 
-      const currentWord = updatedWordList[currentWordIndex];
-      const targetLower = currentWord.word.toLowerCase().trim();
-      const isCorrect = spokenLower === targetLower;
-
-      updatedWordList[currentWordIndex] = {
-        ...currentWord,
-        completed: isCorrect,
-        spokenWord: spokenLower
-      };
-
-      if (isCorrect) {
+      // Update progress only on correct pronunciation
+      if (spokenLower === targetLower) {
         setProgress((currentWordIndex + 1) * 10);
-        if (currentWordIndex + 1 < updatedWordList.length) {
-          updatedWordList[currentWordIndex + 1].unlocked = true;
-        }
       }
 
       return updatedWordList;
@@ -217,18 +211,18 @@ export default function LinguaSlideScreen() {
                   { backgroundColor: colors.surface }
                 ]}
               >
-                <View style={styles.wordInfo}>
+                <View style={styles.wordContent}>
                   <ThemedText style={styles.word}>{item.word}</ThemedText>
-                  {item.spokenWord && (
+                  {item.spokenWord && item.unlocked && (
                     <View style={styles.spokenWordContainer}>
-                      <MaterialIcons 
-                        name="arrow-right" 
-                        size={20} 
-                        color={colors.textSecondary} 
-                      />
+                      <ThemedText style={styles.arrow}>→</ThemedText>
                       <ThemedText style={[
                         styles.spokenWord,
-                        { color: item.spokenWord === item.word.toLowerCase() ? 'green' : 'red' }
+                        { 
+                          color: item.spokenWord === item.word.toLowerCase() 
+                            ? 'green' 
+                            : '#FF4444'
+                        }
                       ]}>
                         {item.spokenWord}
                       </ThemedText>
@@ -236,7 +230,12 @@ export default function LinguaSlideScreen() {
                   )}
                 </View>
                 {item.completed && (
-                  <MaterialIcons name="check-circle" size={24} color="green" />
+                  <MaterialIcons 
+                    name="check-circle" 
+                    size={24} 
+                    color="green" 
+                    style={styles.checkIcon}
+                  />
                 )}
               </View>
             ))}
@@ -296,14 +295,24 @@ const styles = StyleSheet.create({
   wordCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
+    alignItems: 'flex-start',
+    padding: 12,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  lockedCard: { opacity: 0.5 },
-  word: { fontSize: 18, fontWeight: '500' },
+  wordContent: {
+    flex: 1,
+  },
+  word: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
   controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 20 },
   button: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
   difficultyControls: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 10 },
@@ -324,18 +333,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  wordInfo: {
-    flex: 1,
-    flexDirection: 'column',
-    gap: 4,
-  },
   spokenWordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+  },
+  arrow: {
+    marginRight: 8,
+    fontSize: 14,
+    color: '#666',
   },
   spokenWord: {
     fontSize: 14,
     fontStyle: 'italic',
+  },
+  checkIcon: {
+    marginLeft: 12,
+  },
+  lockedCard: {
+    opacity: 0.5,
   },
 });
