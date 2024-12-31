@@ -1,152 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Dimensions, Platform, Pressable } from 'react-native';
-import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import Voice from '@react-native-voice/voice';
-import Reanimated, {
-  useAnimatedStyle,
-  withTiming,
-  useSharedValue,
-  withSpring,
-  withSequence,
-  withDelay,
-} from 'react-native-reanimated';
+import { ThemedText } from '../../components/ThemedText';
+import { ThemedView } from '../../components/ThemedView';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-
-// Types
-type LanguageKey = 'en' | 'es' | 'fr';
-type IconName = 'circle' | 'square' | 'change-history';
-
-// Game configuration
-const SHAPES = {
-  CIRCLE: { name: 'circle', icon: 'circle' as IconName },
-  SQUARE: { name: 'square', icon: 'square' as IconName },
-  TRIANGLE: { name: 'change-history', icon: 'change-history' as IconName },
-};
-
-const WORDS = {
-  en: ['hello', 'world', 'game', 'play', 'learn'],
-  es: ['hola', 'mundo', 'juego', 'jugar', 'aprender'],
-  fr: ['bonjour', 'monde', 'jeu', 'jouer', 'apprendre'],
-};
-
-type Shape = {
-  type: { name: string; icon: IconName };
-  word: string;
-  id: number;
-  position: Reanimated.SharedValue<number>;
-  isStuck: boolean;
-  holePosition?: number;
-};
-
-// Add hole configuration
-const HOLES = [
-  { type: 'circle', x: 0 },
-  { type: 'square', x: 1 },
-  { type: 'triangle', x: 2 },
-];
-
-function useShapePositions() {
-  const positions = {
-    first: useSharedValue(0),
-    second: useSharedValue(0),
-  };
-
-  const createShape = useCallback((currentLanguage: LanguageKey, position: Reanimated.SharedValue<number>) => {
-    const shapeTypes = Object.values(SHAPES);
-    const randomShape = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
-    const randomWord = WORDS[currentLanguage][Math.floor(Math.random() * WORDS[currentLanguage].length)];
-    const holePosition = HOLES.findIndex(hole => hole.type === randomShape.name);
-
-    return {
-      type: randomShape,
-      word: randomWord,
-      id: Date.now(),
-      position,
-      isStuck: false,
-      holePosition,
-    };
-  }, []);
-
-  return { positions, createShape };
-}
-
-// Shape Component
-const Shape = ({ shape, style }: { shape: Shape; style: any }) => {
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: shape.position.value },
-      { translateY: shape.position.value * 0.5 }
-    ],
-    top: -50,
-    right: 0,
-  }));
-
-  return (
-    <Reanimated.View style={[style, animatedStyle]}>
-      <MaterialIcons name={shape.type.icon} size={30} color="#000" />
-      <ThemedText>{shape.word}</ThemedText>
-    </Reanimated.View>
-  );
-};
-
-// Add after Shape component
-const WallWithHoles = () => {
-  const { colors } = useThemeColor();
-  
-  const wallStyles = StyleSheet.create({
-    wall: {
-      width: '100%',
-      height: 150,
-      backgroundColor: colors.primary,
-      position: 'absolute',
-      bottom: 50,
-      opacity: 0.8,
-      flexDirection: 'row',
-      justifyContent: 'space-evenly',
-    },
-    hole: {
-      width: 110,
-      height: 130,
-      backgroundColor: colors.background,
-      borderRadius: 8,
-      marginVertical: 10,
-    },
-    circleHole: {
-      borderRadius: 55,
-    },
-    squareHole: {
-      borderRadius: 8,
-    },
-    triangleHole: {
-      borderRadius: 8,
-      transform: [{ rotate: '180deg' }],
-    },
-  });
-  
-  return (
-    <View style={wallStyles.wall}>
-      {HOLES.map((hole, index) => (
-        <View 
-          key={index} 
-          style={[
-            wallStyles.hole,
-            hole.type === 'circle' && wallStyles.circleHole,
-            hole.type === 'square' && wallStyles.squareHole,
-            hole.type === 'triangle' && wallStyles.triangleHole,
-          ]} 
-        />
-      ))}
-    </View>
-  );
-};
 
 declare global {
   interface Window {
     webkitSpeechRecognition: new () => {
       continuous: boolean;
       interimResults: boolean;
+      onstart: () => void;
+      onend: () => void;
+      onerror: (event: { error: string }) => void;
       onresult: (event: { results: { transcript: string }[][] }) => void;
       start: () => void;
       stop: () => void;
@@ -154,307 +21,334 @@ declare global {
   }
 }
 
-// Add this for shape generation timing
-const SHAPE_INTERVAL = 5000; // 5 seconds between shapes
-const SHAPE_DURATION = 8000; // 8 seconds to cross screen
+// Word sets with increasing difficulty
+const WORD_SETS = {
+  easy: ['cat', 'dog', 'fish', 'bird', 'duck', 'cow', 'pig', 'hen', 'rat', 'goat'],
+  medium: ['elephant', 'giraffe', 'penguin', 'dolphin', 'octopus', 'turtle', 'rabbit', 'monkey', 'tiger', 'zebra'],
+  hard: ['hippopotamus', 'rhinoceros', 'chimpanzee', 'kangaroo', 'crocodile', 'butterfly', 'dragonfly', 'pelican', 'flamingo', 'penguin']
+};
+
+type Difficulty = 'easy' | 'medium' | 'hard';
+
+type WordStatus = {
+  word: string;
+  completed: boolean;
+  unlocked: boolean;
+};
 
 export default function LinguaSlideScreen() {
   const { colors } = useThemeColor();
-  const [currentLanguage, setCurrentLanguage] = useState<LanguageKey>('en');
-  const [score, setScore] = useState(0);
-  const [shapes, setShapes] = useState<Shape[]>([]);
-  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [wordList, setWordList] = useState<WordStatus[]>(() => 
+    WORD_SETS['easy'].map((word, index) => ({
+      word,
+      completed: false,
+      unlocked: index === 0 // Only first word is unlocked initially
+    }))
+  );
+  const [isListening, setIsListening] = useState(false);
+  const [progress, setProgress] = useState(0);
   const webSpeechRef = useRef<any>(null);
-  const { positions, createShape } = useShapePositions();
-  const [isRecording, setIsRecording] = useState(false);
-  const [timer, setTimer] = useState(0);
 
-  const startGame = () => {
-    setIsGameStarted(true);
-    
-    // Create initial shape
-    const firstShape = createShape(currentLanguage, positions.first);
-    setShapes([firstShape]);
-    
-    // Start from right side, higher up
-    firstShape.position.value = Dimensions.get('window').width;
-    firstShape.position.value = withTiming(
-      Dimensions.get('window').width * 0.3,
-      { 
-        duration: SHAPE_DURATION,
-        easing: (x) => Math.pow(x, 1.5)
-      }
-    );
+  // Initialize word list
+  useEffect(() => {
+    console.log('Initializing word list...');
+    const initialWords = WORD_SETS[difficulty].map((word, index) => ({
+      word,
+      completed: false,
+      unlocked: index === 0 // First word should be unlocked
+    }));
+    console.log('Initial words:', initialWords);
+    setWordList(initialWords);
+    setProgress(0);
+  }, [difficulty]); // Only re-run when difficulty changes
 
-    const interval = setInterval(() => {
-      const newShape = createShape(currentLanguage, positions.second);
-      newShape.position.value = Dimensions.get('window').width;
-      newShape.position.value = withTiming(
-        Dimensions.get('window').width * 0.3,
-        { 
-          duration: SHAPE_DURATION,
-          easing: (x) => Math.pow(x, 1.5)
-        }
-      );
-      setShapes(prev => [...prev, newShape]);
-    }, SHAPE_INTERVAL);
-
-    return () => clearInterval(interval);
-  };
-
+  // Setup speech recognition
   useEffect(() => {
     if (Platform.OS === 'web') {
       if ('webkitSpeechRecognition' in window) {
         const recognition = new window.webkitSpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
+        recognition.onstart = () => {
+          console.log('Speech recognition started');
+        };
+        recognition.onend = () => {
+          console.log('Speech recognition ended');
+        };
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+        };
         recognition.onresult = (event) => {
           const last = event.results.length - 1;
           const text = event.results[last][0].transcript;
-          console.log('Speech detected:', text); // Debug speech
+          console.log('Speech detected (web):', text);
           checkPronunciation(text);
         };
         webSpeechRef.current = recognition;
       }
     } else {
+      Voice.onSpeechStart = () => {
+        console.log('Speech recognition started (mobile)');
+      };
+      Voice.onSpeechEnd = () => {
+        console.log('Speech recognition ended (mobile)');
+      };
+      Voice.onSpeechError = (e) => {
+        console.error('Speech recognition error (mobile):', e);
+      };
       Voice.onSpeechResults = (e: any) => {
-        console.log('Speech detected:', e.value[0]); // Debug speech
+        console.log('Speech detected (mobile):', e.value[0]);
         checkPronunciation(e.value[0]);
       };
     }
 
-    return () => cleanup();
+    return () => {
+      if (Platform.OS !== 'web') {
+        Voice.destroy().then(Voice.removeAllListeners);
+      }
+    };
   }, []);
 
-  const cleanup = () => {
-    if (Platform.OS === 'web') {
-      webSpeechRef.current?.stop();
-    } else {
-      Voice.stop();
-      Voice.destroy();
-    }
-  };
-
-  const handleWebSpeechResult = (event: any) => {
-    const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
-    checkPronunciation(text);
-  };
-
-  const handleMobileSpeechResult = (e: any) => {
-    const spokenWords = e.value || [];
-    checkPronunciation(spokenWords[0]?.toLowerCase());
-  };
-
-  const checkPronunciation = (spokenText: string) => {
-    if (!spokenText) return;
-    
-    console.log('Spoken:', spokenText); // Debug speech
-
-    // Find the rightmost shape that matches the word
-    const matchedShape = [...shapes]
-      .reverse()
-      .find((shape) => 
-        spokenText.toLowerCase().includes(shape.word.toLowerCase())
-      );
-
-    if (matchedShape) {
-      console.log('Match found:', matchedShape.word); // Debug match
-      setScore((prev) => prev + 1);
-      
-      // Animate through hole
-      matchedShape.position.value = withSequence(
-        withSpring(Dimensions.get('window').width * 0.15), // Move to hole
-        withDelay(500, withSpring(-150)) // Then disappear
-      );
-
-      // Remove shape after animation
-      setTimeout(() => {
-        setShapes((prev) => prev.filter((s) => s.id !== matchedShape.id));
-      }, 1500);
-    }
-  };
-
-  const releaseShape = (shape: Shape) => {
-    shape.position.value = withSpring(Dimensions.get('window').height);
-    setShapes((prev) => prev.filter((s) => s.id !== shape.id));
-  };
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isGameStarted && timer < 60) {
-      interval = setInterval(() => {
-        setTimer(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isGameStarted, timer]);
-
-  const toggleMicrophone = async () => {
+  const toggleListening = async () => {
     try {
-      if (isRecording) {
+      if (isListening) {
+        console.log('Stopping speech recognition...');
+        setIsListening(false);
         if (Platform.OS === 'web') {
           webSpeechRef.current?.stop();
         } else {
           await Voice.stop();
         }
       } else {
+        console.log('Starting speech recognition...');
+        setIsListening(true);
         if (Platform.OS === 'web') {
           webSpeechRef.current?.start();
         } else {
-          await Voice.start(currentLanguage === 'en' ? 'en-US' : currentLanguage === 'es' ? 'es-ES' : 'fr-FR');
+          await Voice.start('en-US');
         }
       }
-      setIsRecording(!isRecording);
     } catch (e) {
-      console.error(e);
+      console.error('Microphone toggle error:', e);
     }
   };
 
-const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    gameArea: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      paddingBottom: 100,
-    },
-    wall: {
-      width: '100%',
-      height: 150,
-      backgroundColor: colors.primary,
-      position: 'absolute',
-      bottom: 50,
-      opacity: 0.8,
-      flexDirection: 'row',
-      justifyContent: 'space-evenly',
-    },
-    hole: {
-      width: 110,
-      height: 130,
-      backgroundColor: colors.background,
-      borderRadius: 8,
-      marginVertical: 10,
-    },
-    rail: {
-      width: '100%',
-      height: 10,
-      backgroundColor: colors.primary,
-      position: 'absolute',
-      bottom: 50,
-    },
-    micButton: {
-      position: 'absolute',
-      top: 100,
-      left: 20,
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: isRecording ? colors.secondary : colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    timer: {
-      position: 'absolute',
-      top: 100,
-      right: 20,
-      backgroundColor: colors.primary,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 20,
-    },
-    timerText: {
-      color: colors.background,
-      fontSize: 24,
-      fontWeight: 'bold',
-    },
-    shape: {
-      width: 100,
-      height: 120,
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'absolute',
-      backgroundColor: colors.surface,
-      borderRadius: 8,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
-    },
-    score: {
-      position: 'absolute',
-      top: 20,
-      right: 20,
-      fontSize: 24,
-      color: colors.primary,
-    },
-    startButton: {
-    position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: [{ translateX: -75 }, { translateY: -25 }],
-      backgroundColor: colors.primary,
-      paddingHorizontal: 30,
-      paddingVertical: 15,
-      borderRadius: 25,
-      elevation: 5,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    },
-    buttonText: {
-      color: colors.background,
-      fontSize: 20,
-      fontWeight: 'bold',
-    },
-    circleHole: {
-      borderRadius: 55,
-    },
-    squareHole: {
-      borderRadius: 8,
-    },
-    triangleHole: {
-      borderRadius: 8,
-      transform: [{ rotate: '180deg' }],
-  },
-});
+  const checkPronunciation = (spokenText: string) => {
+    console.log('Current wordList state:', wordList);
+    console.log('Checking pronunciation for:', spokenText);
+    
+    // Find first unlocked and uncompleted word
+    const currentWordIndex = wordList.findIndex(w => w.unlocked && !w.completed);
+    console.log('Current word index:', currentWordIndex);
+    
+    if (currentWordIndex === -1) {
+      console.log('All words completed - resetting game');
+      resetGame();
+      return;
+    }
+
+    const currentWord = wordList[currentWordIndex];
+    console.log('Current word to match:', currentWord.word);
+    
+    const spokenLower = spokenText.toLowerCase().trim();
+    const targetLower = currentWord.word.toLowerCase().trim();
+    
+    console.log(`Comparing: "${spokenLower}" with "${targetLower}"`);
+    
+    if (spokenLower === targetLower) {
+      console.log('Match found! Word pronounced correctly');
+      
+      // Create new word list with updated states
+      const newWordList = wordList.map((word, index) => {
+        if (index === currentWordIndex) {
+          // Mark current word as completed but keep it unlocked
+          return { ...word, completed: true };
+        }
+        if (index === currentWordIndex + 1) {
+          // Unlock next word
+          return { ...word, unlocked: true };
+        }
+        return word;
+      });
+      
+      console.log('New word list:', newWordList);
+      setWordList(newWordList);
+      setProgress((currentWordIndex + 1) * 10);
+    } else {
+      console.log('No match found, try again');
+    }
+  };
+
+  const resetGame = () => {
+    const words = WORD_SETS[difficulty].map((word, index) => ({
+      word,
+      completed: false,
+      unlocked: index === 0
+    }));
+    setWordList(words);
+    setProgress(0);
+  };
+
+  // Add debug logging for state updates
+  useEffect(() => {
+    console.log('WordList state updated:', wordList.map(w => ({
+      word: w.word,
+      completed: w.completed,
+      unlocked: w.unlocked
+    })));
+  }, [wordList]);
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText style={styles.score}>Score: {score}</ThemedText>
-      {!isGameStarted ? (
-        <Pressable style={styles.startButton} onPress={startGame}>
-          <ThemedText style={styles.buttonText}>Start Game</ThemedText>
-        </Pressable>
-      ) : (
-        <View style={styles.gameArea}>
-          <Pressable 
-            style={styles.micButton}
-            onPress={toggleMicrophone}
-          >
-            <FontAwesome 
-              name={isRecording ? "microphone" : "microphone-slash"} 
-              size={24} 
-              color={colors.background} 
-            />
-          </Pressable>
-          <View style={styles.timer}>
-            <ThemedText style={styles.timerText}>
-              {String(Math.floor(timer / 60)).padStart(2, '0')}:
-              {String(timer % 60).padStart(2, '0')}
-            </ThemedText>
-          </View>
-          <WallWithHoles />
-          <View style={styles.rail} />
-          {shapes.map((shape) => (
-            <Shape key={shape.id} shape={shape} style={styles.shape} />
-          ))}
+      <View style={styles.header}>
+        <ThemedText style={styles.title}>Pronunciation Game</ThemedText>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
         </View>
-      )}
+      </View>
+
+      <View style={styles.wordList}>
+        {wordList.map((item, index) => (
+          <View 
+            key={index} 
+            style={[
+              styles.wordCard,
+              !item.unlocked && styles.lockedCard,
+              { backgroundColor: colors.surface }
+            ]}
+          >
+            <ThemedText style={styles.word}>{item.word}</ThemedText>
+            {item.completed && (
+              <MaterialIcons name="check-circle" size={24} color="green" />
+            )}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.controls}>
+        <Pressable 
+          style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
+          onPress={toggleListening}
+        >
+          <MaterialIcons 
+            name={isListening ? "mic" : "mic-none"} 
+            size={24} 
+            color="white" 
+          />
+        </Pressable>
+
+        <Pressable 
+          style={[styles.button, { backgroundColor: colors.primary }]}
+          onPress={resetGame}
+        >
+          <MaterialIcons name="refresh" size={24} color="white" />
+        </Pressable>
+      </View>
+
+      <View style={styles.difficultyControls}>
+        {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => (
+          <Pressable
+            key={level}
+            style={[
+              styles.difficultyButton,
+              { 
+                backgroundColor: difficulty === level ? colors.primary : colors.surface,
+                borderColor: colors.primary
+              }
+            ]}
+            onPress={() => setDifficulty(level)}
+          >
+            <ThemedText style={[
+              styles.difficultyText,
+              difficulty === level && { color: 'white' }
+            ]}>
+              {level.charAt(0).toUpperCase() + level.slice(1)}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
     </ThemedView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  progressBar: {
+    height: 10,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  wordList: {
+    flex: 1,
+    gap: 10,
+  },
+  wordCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  lockedCard: {
+    opacity: 0.5,
+  },
+  word: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginVertical: 20,
+  },
+  button: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  difficultyControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  difficultyButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  difficultyText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+});
