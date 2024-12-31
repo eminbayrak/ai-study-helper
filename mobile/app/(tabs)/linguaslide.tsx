@@ -18,14 +18,14 @@ declare global {
 }
 
 interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  onstart: () => void;
-  onend: () => void;
-  onerror: (event: { error: string }) => void;
-  onresult: (event: { results: { transcript: string }[][] }) => void;
-  start: () => void;
-  stop: () => void;
+      continuous: boolean;
+      interimResults: boolean;
+      onstart: () => void;
+      onend: () => void;
+      onerror: (event: { error: string }) => void;
+      onresult: (event: { results: { transcript: string }[][] }) => void;
+      start: () => void;
+      stop: () => void;
 }
 
 // Update the types
@@ -51,6 +51,13 @@ type GameResult = {
   wordsCompleted: number;
   timeSpent: number;
   accuracy: number;
+};
+
+// Add a constant for time limits
+const DIFFICULTY_TIME_LIMITS = {
+  easy: 30,
+  medium: 40,
+  hard: 50
 };
 
 export default function LinguaSlideScreen() {
@@ -178,8 +185,8 @@ export default function LinguaSlideScreen() {
       };
       Voice.onSpeechResults = (e: any) => {
         if (e.value && e.value[0]) {
-          console.log('Speech detected (mobile):', e.value[0]);
-          checkPronunciation(e.value[0]);
+        console.log('Speech detected (mobile):', e.value[0]);
+        checkPronunciation(e.value[0]);
         }
       };
       Voice.start('en-US');
@@ -236,7 +243,7 @@ export default function LinguaSlideScreen() {
     try {
       await fetchWords();
       setGameState('playing');
-      setTimeLeft(30);
+      setTimeLeft(DIFFICULTY_TIME_LIMITS[difficulty]); // Set time based on difficulty
       setProgress(0);
       
       // Reset any existing speech recognition
@@ -296,7 +303,7 @@ export default function LinguaSlideScreen() {
     // Calculate basic statistics
     const completedWords = wordList.filter(w => w.completed && !w.skipped).length;
     const totalAttempts = wordList.reduce((acc, word) => acc + (word.attempts || 0), 0);
-    const timeSpent = 30 - timeLeft;
+    const timeSpent = DIFFICULTY_TIME_LIMITS[difficulty] - timeLeft; // Use difficulty-based time
     const accuracy = totalAttempts > 0 
       ? Math.round((completedWords / totalAttempts) * 100)
       : 0;
@@ -434,7 +441,7 @@ export default function LinguaSlideScreen() {
 
       const currentWord = prevWordList[currentWordIndex];
       const targetLower = currentWord.word.toLowerCase().trim();
-      
+
       const isCorrect = spokenLower === targetLower || isSimilarPronunciation(spokenLower, targetLower);
 
       // Play appropriate sound
@@ -444,8 +451,8 @@ export default function LinguaSlideScreen() {
         failureSound.current?.replayAsync();
       }
 
-      const updatedWordList = prevWordList.map((word, index) => {
-        if (index === currentWordIndex) {
+        const updatedWordList = prevWordList.map((word, index) => {
+          if (index === currentWordIndex) {
           return {
             ...word,
             spokenWord: spokenLower,
@@ -454,10 +461,10 @@ export default function LinguaSlideScreen() {
           };
         }
         if (index === currentWordIndex + 1 && isCorrect) {
-          return { ...word, unlocked: true };
-        }
-        return word;
-      });
+            return { ...word, unlocked: true };
+          }
+          return word;
+        });
 
       if (isCorrect) {
         setProgress((currentWordIndex + 1) * 10);
@@ -536,9 +543,15 @@ export default function LinguaSlideScreen() {
             ))}
           </>
         ) : (
-          <ThemedText style={[styles.noAttemptsText, { color: colors.text }]}>
-            Perfect pronunciation! No words to practice.
-          </ThemedText>
+          <View style={styles.perfectScoreContainer}>
+            <MaterialIcons name="stars" size={48} color={colors.primary} />
+            <ThemedText style={[styles.perfectScoreText, { color: colors.text }]}>
+              Perfect Pronunciation!
+            </ThemedText>
+            <ThemedText style={[styles.perfectScoreSubtext, { color: colors.textSecondary }]}>
+              Amazing job! You nailed every word.
+            </ThemedText>
+          </View>
         )}
 
         <Pressable
@@ -768,6 +781,21 @@ export default function LinguaSlideScreen() {
       padding: 4,
       marginLeft: 4,
     },
+    perfectScoreContainer: {
+      alignItems: 'center',
+      padding: 20,
+      marginVertical: 20,
+    },
+    perfectScoreText: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      marginVertical: 12,
+      textAlign: 'center',
+    },
+    perfectScoreSubtext: {
+      fontSize: 18,
+      textAlign: 'center',
+    },
   });
 
   return (
@@ -829,13 +857,13 @@ export default function LinguaSlideScreen() {
       ) : gameState === 'playing' ? (
         // Game screen
         <>
-          <View style={styles.header}>
+      <View style={styles.header}>
             <ThemedText style={[styles.title, { color: colors.text }]}>Pronunciation Game</ThemedText>
             <ThemedText style={[styles.timer, { color: colors.text }]}>Time: {timeLeft}s</ThemedText>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
-            </View>
-          </View>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
+        </View>
+      </View>
 
           {isLoading ? (
             <View style={styles.loadingContainer}>
@@ -844,13 +872,13 @@ export default function LinguaSlideScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.wordList}>
-                {wordList.map((item, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.wordCard,
-                      !item.unlocked && styles.lockedCard,
+      <View style={styles.wordList}>
+        {wordList.map((item, index) => (
+          <View
+            key={index}
+            style={[
+              styles.wordCard,
+              !item.unlocked && styles.lockedCard,
                       { 
                         backgroundColor: colors.surface,
                         borderColor: colors.border,
@@ -880,20 +908,20 @@ export default function LinguaSlideScreen() {
                         style={styles.checkIcon}
                       />
                     )}
-                  </View>
-                ))}
-              </View>
+          </View>
+        ))}
+      </View>
 
-              <View style={styles.controls}>
-                <Pressable
-                  style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
-                  onPress={toggleListening}
-                >
-                  <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={24} color="white" />
-                </Pressable>
+      <View style={styles.controls}>
+        <Pressable
+          style={[styles.button, { backgroundColor: isListening ? colors.secondary : colors.primary }]}
+          onPress={toggleListening}
+        >
+          <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={24} color="white" />
+        </Pressable>
 
-                <Pressable
-                  style={[styles.button, { backgroundColor: colors.primary }]}
+        <Pressable
+          style={[styles.button, { backgroundColor: colors.primary }]}
                   onPress={() => {
                     // Skip current word
                     setWordList((prevWordList) => {
@@ -919,10 +947,37 @@ export default function LinguaSlideScreen() {
                 <Pressable
                   style={[styles.button, { backgroundColor: colors.primary }]}
                   onPress={fetchWords}
+        >
+          <MaterialIcons name="refresh" size={24} color="white" />
+        </Pressable>
+
+          <Pressable
+                  style={[styles.button, { backgroundColor: '#FF4444' }]}
+                  onPress={() => {
+                    // Stop speech recognition
+                    if (Platform.OS === 'web') {
+                      if (webSpeechRef.current) {
+                        webSpeechRef.current.onend = null;
+                        webSpeechRef.current.stop();
+                        webSpeechRef.current = null;
+                      }
+                    } else {
+                      Voice.destroy().then(Voice.removeAllListeners);
+                    }
+                    setIsListening(false);
+
+                    // Clear timer
+                    if (timerRef.current) {
+                      clearInterval(timerRef.current);
+                    }
+
+                    // Reset game state
+                    setGameState('ready');
+                  }}
                 >
-                  <MaterialIcons name="refresh" size={24} color="white" />
-                </Pressable>
-              </View>
+                  <MaterialIcons name="close" size={24} color="white" />
+          </Pressable>
+      </View>
             </>
           )}
         </>
