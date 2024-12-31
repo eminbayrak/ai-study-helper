@@ -466,12 +466,13 @@ export default function LinguaSlideScreen() {
     
     // Group attempts by word to show pronunciation feedback
     const pronunciationFeedback = wordList
-      .filter(word => (word.attempts || 0) > 1 || !word.completed) // Only show words with multiple attempts or failures
+      .filter(word => (word.attempts || 0) > 1 || !word.completed || word.skipped) // Add word.skipped to filter
       .map(word => ({
         word: word.word,
         attempts: word.attempts || 0,
         completed: word.completed,
-        spokenWord: word.spokenWord, // What the user actually said
+        spokenWord: word.spokenWord,
+        skipped: word.skipped // Add skipped property
       }))
       .sort((a, b) => b.attempts - a.attempts); // Sort by most attempts first
 
@@ -486,15 +487,19 @@ export default function LinguaSlideScreen() {
               <View key={index} style={[styles.wordFeedbackRow, { borderBottomColor: colors.border }]}>
                 <View style={styles.wordStatusContainer}>
                   <ThemedText style={[styles.wordText, { color: colors.text }]}>{item.word}</ThemedText>
-                  {item.spokenWord && item.spokenWord !== item.word && (
+                  {item.skipped ? (
+                    <ThemedText style={[styles.spokenWordText, { color: colors.text }]}>
+                      (skipped)
+                    </ThemedText>
+                  ) : item.spokenWord && item.spokenWord !== item.word && (
                     <ThemedText style={[styles.spokenWordText, { color: colors.text }]}>
                       (you said: {item.spokenWord})
                     </ThemedText>
                   )}
                   <MaterialIcons 
-                    name={item.completed ? "check-circle" : "error"} 
+                    name={item.completed && !item.skipped ? "check-circle" : "error"} 
                     size={20} 
-                    color={item.completed ? "#4CAF50" : "#FF4444"} 
+                    color={item.completed && !item.skipped ? "#4CAF50" : "#FF4444"} 
                   />
                 </View>
                 <ThemedText style={[styles.attemptsText, { color: colors.text }]}>
@@ -765,14 +770,14 @@ export default function LinguaSlideScreen() {
             {isStarting ? (
               <View style={styles.startingContainer}>
                 <ActivityIndicator color="white" />
-                <ThemedText style={[styles.startButtonText, { color: 'white' }]}>
+                <ThemedText style={[styles.startButtonText, { color: 'white', marginLeft: 10 }]}>
                   Starting...
                 </ThemedText>
               </View>
             ) : (
               <View style={styles.startingContainer}>
                 <MaterialIcons name="play-arrow" size={24} color="white" />
-                <ThemedText style={[styles.startButtonText, { color: 'white' }]}>
+                <ThemedText style={[styles.startButtonText, { color: 'white', marginLeft: 10 }]}>
                   Start Game
                 </ThemedText>
               </View>
