@@ -1,0 +1,7 @@
+{
+  "expo": {
+    "plugins": [
+      "@react-native-voice/voice"
+    ]
+  }
+} 

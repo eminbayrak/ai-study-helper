@@ -15,7 +15,9 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@expo/config": "^10.0.0",
     "@expo/vector-icons": "^14.0.2",
+    "@react-native-voice/voice": "^3.2.4",
     "@react-navigation/bottom-tabs": "^7.0.0",
     "@react-navigation/native": "^7.0.0",
     "expo": "~52.0.20",
@@ -32,6 +34,10 @@
     "expo-symbols": "~0.2.0",
     "expo-system-ui": "~4.0.6",
     "expo-web-browser": "~14.0.1",
+    "metro": "^0.81.0",
+    "metro-core": "^0.81.0",
+    "metro-runtime": "^0.81.0",
+    "metro-source-map": "^0.81.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.5",

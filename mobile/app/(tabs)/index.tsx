@@ -120,11 +120,11 @@ export default function HomeScreen() {
       } else {
         // Mobile handling
         if (type === 'image') {
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 1,
-          });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
 
           if (!result.canceled && result.assets[0]) {
             const asset = result.assets[0];
