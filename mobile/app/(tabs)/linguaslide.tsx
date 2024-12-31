@@ -320,6 +320,7 @@ export default function LinguaSlideScreen() {
       // Common homophones
       'red': ['read', 'red'],
       'read': ['red', 'reed'],
+      'ball': ['bawl'],
       'blue': ['blew'],
       'sea': ['see', 'c'],
       'eye': ['i'],
@@ -468,7 +469,14 @@ export default function LinguaSlideScreen() {
                   >
                     <MaterialIcons name="volume-up" size={20} color={colors.primary} />
                   </Pressable>
-                  <ThemedText style={[styles.wordText, { color: colors.text }]}>{item.word}</ThemedText>
+                  <ThemedText style={[styles.wordText, { color: colors.text }]}>
+                    {item.word}
+                  </ThemedText>
+                  <MaterialIcons 
+                    name={item.completed && !item.skipped ? "check-circle" : "error"} 
+                    size={20} 
+                    color={item.completed && !item.skipped ? "#4CAF50" : "#FF4444"} 
+                  />
                   {item.skipped ? (
                     <ThemedText style={[styles.spokenWordText, { color: colors.text }]}>
                       (skipped)
@@ -478,11 +486,6 @@ export default function LinguaSlideScreen() {
                       (you said: {item.spokenWord})
                     </ThemedText>
                   )}
-                  <MaterialIcons 
-                    name={item.completed && !item.skipped ? "check-circle" : "error"} 
-                    size={20} 
-                    color={item.completed && !item.skipped ? "#4CAF50" : "#FF4444"} 
-                  />
                 </View>
                 <ThemedText style={[styles.attemptsText, { color: colors.text }]}>
                   {item.attempts} {item.attempts === 1 ? 'attempt' : 'attempts'}
@@ -682,22 +685,30 @@ export default function LinguaSlideScreen() {
     wordFeedbackRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       width: '100%',
       paddingVertical: 8,
       borderBottomWidth: 1,
+      flexWrap: 'wrap',
+      gap: 8,
     },
     wordStatusContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
+      flexWrap: 'wrap',
+      flex: 1,
+      paddingRight: 8,
     },
     wordText: {
       fontSize: 16,
       fontWeight: '500',
+      flexShrink: 1,
     },
     attemptsText: {
       fontSize: 14,
+      minWidth: 80,
+      textAlign: 'right',
     },
     noAttemptsText: {
       fontSize: 16,
@@ -706,7 +717,10 @@ export default function LinguaSlideScreen() {
     spokenWordText: {
       fontSize: 14,
       fontStyle: 'italic',
-      marginLeft: 8,
+      flexShrink: 1,
+      flexBasis: '100%',
+      paddingLeft: 32,
+      marginTop: 4,
     },
     speakerButton: {
       padding: 4,
