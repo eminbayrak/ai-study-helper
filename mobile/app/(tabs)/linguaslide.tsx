@@ -477,34 +477,36 @@ export default function LinguaSlideScreen() {
 
     return (
       <View style={[styles.scoreBoard, { backgroundColor: colors.surface }]}>
-        <ThemedText style={styles.scoreBoardTitle}>Practice Summary</ThemedText>
+        <ThemedText style={[styles.scoreBoardTitle, { color: colors.text }]}>Practice Summary</ThemedText>
         
         {pronunciationFeedback.length > 0 ? (
           <>
-            <ThemedText style={styles.feedbackHeader}>Words to Practice:</ThemedText>
+            <ThemedText style={[styles.feedbackHeader, { color: colors.text }]}>Words to Practice:</ThemedText>
             {pronunciationFeedback.map((item, index) => (
-              <View key={index} style={styles.wordFeedbackRow}>
+              <View key={index} style={[styles.wordFeedbackRow, { borderBottomColor: colors.border }]}>
                 <View style={styles.wordStatusContainer}>
-                  <ThemedText style={styles.wordText}>{item.word}</ThemedText>
+                  <ThemedText style={[styles.wordText, { color: colors.text }]}>{item.word}</ThemedText>
                   {item.spokenWord && item.spokenWord !== item.word && (
-                    <ThemedText style={styles.spokenWordText}>
+                    <ThemedText style={[styles.spokenWordText, { color: colors.text }]}>
                       (you said: {item.spokenWord})
                     </ThemedText>
                   )}
                   <MaterialIcons 
                     name={item.completed ? "check-circle" : "error"} 
                     size={20} 
-                    color={item.completed ? "green" : "#FF4444"} 
+                    color={item.completed ? "#4CAF50" : "#FF4444"} 
                   />
                 </View>
-                <ThemedText style={styles.attemptsText}>
+                <ThemedText style={[styles.attemptsText, { color: colors.text }]}>
                   {item.attempts} {item.attempts === 1 ? 'attempt' : 'attempts'}
                 </ThemedText>
               </View>
             ))}
           </>
         ) : (
-          <ThemedText style={styles.noAttemptsText}>Perfect pronunciation! No words to practice.</ThemedText>
+          <ThemedText style={[styles.noAttemptsText, { color: colors.text }]}>
+            Perfect pronunciation! No words to practice.
+          </ThemedText>
         )}
 
         <Pressable
@@ -529,7 +531,12 @@ export default function LinguaSlideScreen() {
     container: { flex: 1, padding: 20 },
     header: { marginBottom: 20 },
     title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-    progressBar: { height: 10, backgroundColor: '#E0E0E0', borderRadius: 5, overflow: 'hidden' },
+    progressBar: { 
+      height: 10, 
+      backgroundColor: colors.border,
+      borderRadius: 5, 
+      overflow: 'hidden' 
+    },
     progressFill: { height: '100%', borderRadius: 5 },
     wordList: { flex: 1, gap: 10 },
     wordCard: {
@@ -538,7 +545,6 @@ export default function LinguaSlideScreen() {
       alignItems: 'flex-start',
       padding: 12,
       borderRadius: 8,
-      backgroundColor: 'white',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,
@@ -551,7 +557,6 @@ export default function LinguaSlideScreen() {
     word: {
       fontSize: 18,
       fontWeight: '500',
-      marginBottom: 4,
     },
     controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 20 },
     button: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
@@ -577,6 +582,7 @@ export default function LinguaSlideScreen() {
       marginTop: 10,
       fontSize: 16,
       fontWeight: '500',
+      color: colors.text,
     },
     spokenWordContainer: {
       flexDirection: 'row',
@@ -643,7 +649,6 @@ export default function LinguaSlideScreen() {
     timer: {
       fontSize: 20,
       fontWeight: 'bold',
-      color: colors.primary,
       marginBottom: 8,
     },
     startButton: {
@@ -678,7 +683,6 @@ export default function LinguaSlideScreen() {
     },
     phonetic: {
       fontSize: 16,
-      color: colors.textSecondary,
       fontStyle: 'italic',
     },
     feedbackHeader: {
@@ -695,7 +699,6 @@ export default function LinguaSlideScreen() {
       width: '100%',
       paddingVertical: 8,
       borderBottomWidth: 1,
-      borderBottomColor: '#eee',
     },
     wordStatusContainer: {
       flexDirection: 'row',
@@ -708,16 +711,13 @@ export default function LinguaSlideScreen() {
     },
     attemptsText: {
       fontSize: 14,
-      color: colors.textSecondary,
     },
     noAttemptsText: {
       fontSize: 16,
-      color: colors.textSecondary,
       marginTop: 20,
     },
     spokenWordText: {
       fontSize: 14,
-      color: colors.textSecondary,
       fontStyle: 'italic',
       marginLeft: 8,
     },
@@ -728,7 +728,7 @@ export default function LinguaSlideScreen() {
       {gameState === 'ready' ? (
         // Initial screen with difficulty selection and start button
         <View style={styles.startScreen}>
-          <ThemedText style={styles.title}>Pronunciation Game</ThemedText>
+          <ThemedText style={[styles.title, { color: colors.text }]}>Pronunciation Game</ThemedText>
           <View style={styles.difficultyControls}>
             {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => (
               <Pressable
@@ -736,16 +736,18 @@ export default function LinguaSlideScreen() {
                 style={[
                   styles.difficultyButton,
                   { 
-                    backgroundColor: difficulty === level ? colors.primary : colors.surface,
+                    backgroundColor: difficulty === level ? colors.primary : 'transparent',
                     borderColor: colors.primary
                   }
                 ]}
                 onPress={() => setDifficulty(level)}
               >
-                <ThemedText style={[
-                  styles.difficultyText,
-                  difficulty === level && { color: 'white' }
-                ]}>
+                <ThemedText 
+                  style={[
+                    styles.difficultyText,
+                    { color: difficulty === level ? 'white' : colors.primary }
+                  ]}
+                >
                   {level.charAt(0).toUpperCase() + level.slice(1)}
                 </ThemedText>
               </Pressable>
@@ -763,14 +765,14 @@ export default function LinguaSlideScreen() {
             {isStarting ? (
               <View style={styles.startingContainer}>
                 <ActivityIndicator color="white" />
-                <ThemedText style={[styles.startButtonText, { marginLeft: 10 }]}>
+                <ThemedText style={[styles.startButtonText, { color: 'white' }]}>
                   Starting...
                 </ThemedText>
               </View>
             ) : (
               <View style={styles.startingContainer}>
                 <MaterialIcons name="play-arrow" size={24} color="white" />
-                <ThemedText style={[styles.startButtonText, { marginLeft: 10 }]}>
+                <ThemedText style={[styles.startButtonText, { color: 'white' }]}>
                   Start Game
                 </ThemedText>
               </View>
@@ -781,8 +783,8 @@ export default function LinguaSlideScreen() {
         // Game screen
         <>
           <View style={styles.header}>
-            <ThemedText style={styles.title}>Pronunciation Game</ThemedText>
-            <ThemedText style={styles.timer}>Time: {timeLeft}s</ThemedText>
+            <ThemedText style={[styles.title, { color: colors.text }]}>Pronunciation Game</ThemedText>
+            <ThemedText style={[styles.timer, { color: colors.text }]}>Time: {timeLeft}s</ThemedText>
             <View style={styles.progressBar}>
               <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
             </View>
@@ -802,18 +804,26 @@ export default function LinguaSlideScreen() {
                     style={[
                       styles.wordCard,
                       !item.unlocked && styles.lockedCard,
-                      { backgroundColor: colors.surface }
+                      { 
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        borderWidth: 1,
+                      }
                     ]}
                   >
                     <View style={styles.wordContainer}>
-                      <ThemedText style={styles.word}>{item.word}</ThemedText>
-                      <ThemedText style={styles.phonetic}>({item.phonetic})</ThemedText>
+                      <ThemedText style={[styles.word, { color: colors.text }]}>
+                        {item.word}
+                      </ThemedText>
+                      <ThemedText style={[styles.phonetic, { color: colors.text }]}>
+                        ({item.phonetic})
+                      </ThemedText>
                     </View>
                     {item.completed && (
                       <MaterialIcons 
                         name={item.skipped ? "close" : "check-circle"} 
                         size={24} 
-                        color={item.skipped ? "#FF4444" : "green"} 
+                        color={item.skipped ? "#FF4444" : "#4CAF50"} 
                         style={styles.checkIcon}
                       />
                     )}
