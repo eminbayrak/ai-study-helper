@@ -47,7 +47,6 @@ type WordSets = {
 // Add these new types
 type GameState = 'ready' | 'playing' | 'finished';
 type GameResult = {
-  score: number;
   wordsCompleted: number;
   timeSpent: number;
   accuracy: number;
@@ -291,44 +290,19 @@ export default function LinguaSlideScreen() {
     }
     setIsListening(false);
     
-    // Calculate statistics
+    // Calculate basic statistics
     const completedWords = wordList.filter(w => w.completed && !w.skipped).length;
     const totalAttempts = wordList.reduce((acc, word) => acc + (word.attempts || 0), 0);
     const timeSpent = 30 - timeLeft;
-
-    // Calculate accuracy
     const accuracy = totalAttempts > 0 
       ? Math.round((completedWords / totalAttempts) * 100)
       : 0;
 
-    // Calculate score components
-    const wordPoints = completedWords * 50;  // 50 points per completed word (max 500)
-    const timeBonus = Math.max(0, Math.round((30 - timeSpent) * 5)); // 5 points per second saved (max 150)
-    const accuracyBonus = Math.round((accuracy / 100) * 100); // Up to 100 points for accuracy
-
-    // Calculate final score
-    const totalScore = Math.max(0, wordPoints + timeBonus + accuracyBonus);
-
-    const result = {
-      score: totalScore,
+    setGameResult({
       wordsCompleted: completedWords,
       timeSpent: timeSpent,
       accuracy: accuracy
-    };
-
-    console.log('Game Result:', {
-      ...result,
-      details: {
-        completedWords,
-        totalAttempts,
-        wordPoints: `${wordPoints} (${completedWords} words × 50)`,
-        timeBonus: `${timeBonus} (${30 - timeSpent} seconds saved × 5)`,
-        accuracyBonus: `${accuracyBonus} (${accuracy}% of 100)`,
-        finalScore: totalScore
-      }
     });
-
-    setGameResult(result);
   };
 
   // Add this helper function for word comparison
