@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     PORT: int = 8000
     
+    # Debug settings
+    DEBUG: bool = True
+    
     # Model settings
     MODEL_PATH: str = "facebook/bart-large-cnn"
     SUMMARIZATION_MODEL: str = "facebook/bart-large-cnn"
@@ -33,11 +36,11 @@ class Settings(BaseSettings):
     MAX_TEXT_LENGTH: int = 1024
     
     # OpenRouter settings
-    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "deepseek-ai/deepseek-coder-33b-instruct")
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "gpt-3.5-turbo")
 
     class Config:
-        env_file = str(ROOT_DIR / '.env')
+        env_file = ".env"
         case_sensitive = True
         env_file_encoding = 'utf-8'
 

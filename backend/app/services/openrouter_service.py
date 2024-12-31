@@ -14,11 +14,15 @@ ENCODING = tiktoken.encoding_for_model("gpt-3.5-turbo")
 class OpenRouterService:
     def __init__(self):
         self.api_key = settings.OPENROUTER_API_KEY
+        if not self.api_key:
+            raise ValueError("OPENROUTER_API_KEY environment variable is not set")
+            
         self.model = settings.OPENROUTER_MODEL
         self.base_url = "https://openrouter.ai/api/v1"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "http://localhost:8000",
+            "X-Title": "EduLingo",
             "Content-Type": "application/json"
         }
 
