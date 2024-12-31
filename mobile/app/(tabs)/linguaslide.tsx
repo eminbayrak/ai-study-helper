@@ -33,6 +33,7 @@ type WordStatus = {
   word: string;
   completed: boolean;
   unlocked: boolean;
+  spokenWord?: string;
 };
 
 type WordSets = {
@@ -130,6 +131,12 @@ export default function LinguaSlideScreen() {
         }
       } else {
         setIsListening(true);
+        // Clear the previous spoken word for the current active word
+        setWordList(prevWordList => prevWordList.map(word => ({
+          ...word,
+          spokenWord: word.unlocked && !word.completed ? undefined : word.spokenWord
+        })));
+        
         if (Platform.OS === 'web') {
           webSpeechRef.current?.start();
         } else {
@@ -154,24 +161,33 @@ export default function LinguaSlideScreen() {
         return prevWordList;
       }
 
-      const currentWord = prevWordList[currentWordIndex];
+      // Clear any previous spoken words for incomplete words
+      const updatedWordList = prevWordList.map((word, index) => {
+        if (index > currentWordIndex) {
+          // Clear future words' spoken attempts
+          return { ...word, spokenWord: undefined };
+        }
+        return word;
+      });
+
+      const currentWord = updatedWordList[currentWordIndex];
       const targetLower = currentWord.word.toLowerCase().trim();
+      const isCorrect = spokenLower === targetLower;
 
-      if (spokenLower === targetLower) {
-        const updatedWordList = prevWordList.map((word, index) => {
-          if (index === currentWordIndex) {
-            return { ...word, completed: true };
-          }
-          if (index === currentWordIndex + 1) {
-            return { ...word, unlocked: true };
-          }
-          return word;
-        });
+      updatedWordList[currentWordIndex] = {
+        ...currentWord,
+        completed: isCorrect,
+        spokenWord: spokenLower
+      };
 
-        setProgress((currentWordIndex + 1) * 10); // Changed from 20 to 10 since we now have 10 words
-        return updatedWordList;
+      if (isCorrect) {
+        setProgress((currentWordIndex + 1) * 10);
+        if (currentWordIndex + 1 < updatedWordList.length) {
+          updatedWordList[currentWordIndex + 1].unlocked = true;
+        }
       }
-      return prevWordList;
+
+      return updatedWordList;
     });
   };
 
@@ -201,8 +217,27 @@ export default function LinguaSlideScreen() {
                   { backgroundColor: colors.surface }
                 ]}
               >
-                <ThemedText style={styles.word}>{item.word}</ThemedText>
-                {item.completed && <MaterialIcons name="check-circle" size={24} color="green" />}
+                <View style={styles.wordInfo}>
+                  <ThemedText style={styles.word}>{item.word}</ThemedText>
+                  {item.spokenWord && (
+                    <View style={styles.spokenWordContainer}>
+                      <MaterialIcons 
+                        name="arrow-right" 
+                        size={20} 
+                        color={colors.textSecondary} 
+                      />
+                      <ThemedText style={[
+                        styles.spokenWord,
+                        { color: item.spokenWord === item.word.toLowerCase() ? 'green' : 'red' }
+                      ]}>
+                        {item.spokenWord}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+                {item.completed && (
+                  <MaterialIcons name="check-circle" size={24} color="green" />
+                )}
               </View>
             ))}
           </View>
@@ -258,7 +293,15 @@ const styles = StyleSheet.create({
   progressBar: { height: 10, backgroundColor: '#E0E0E0', borderRadius: 5, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 5 },
   wordList: { flex: 1, gap: 10 },
-  wordCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderRadius: 8 },
+  wordCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
   lockedCard: { opacity: 0.5 },
   word: { fontSize: 18, fontWeight: '500' },
   controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 20 },
@@ -280,5 +323,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     fontWeight: '500',
+  },
+  wordInfo: {
+    flex: 1,
+    flexDirection: 'column',
+    gap: 4,
+  },
+  spokenWordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  spokenWord: {
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 });
