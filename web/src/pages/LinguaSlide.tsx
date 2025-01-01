@@ -776,21 +776,22 @@ function LinguaSlide() {
       </Typography>
 
       <Card sx={{ 
-        p: 4,
+        p: 3,
         bgcolor: 'background.paper',
         borderRadius: 2,
-        boxShadow: 1
+        boxShadow: 1,
+        mb: 8
       }}>
-        <Stack spacing={4}>
+        <Stack spacing={3}>
           <Box>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>
               Time Left: {timeLeft}s
             </Typography>
             <LinearProgress 
               variant="determinate" 
               value={(progress / 100) * 100}
               sx={{
-                height: 10,
+                height: 8,
                 borderRadius: 4,
                 bgcolor: 'rgba(255, 255, 255, 0.1)',
                 '& .MuiLinearProgress-bar': {
@@ -801,12 +802,12 @@ function LinguaSlide() {
           </Box>
 
           {isLoading ? (
-            <Box sx={{ textAlign: 'center', py: 6 }}>
+            <Box sx={{ textAlign: 'center', py: 4 }}>
               <CircularProgress />
-              <Typography sx={{ mt: 3 }}>Loading words...</Typography>
+              <Typography sx={{ mt: 2 }}>Loading words...</Typography>
             </Box>
           ) : (
-            <Stack spacing={3}>
+            <Stack spacing={2}>
               {wordList
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((item, index) => (
@@ -836,7 +837,7 @@ function LinguaSlide() {
                         alignItems="center"
                         sx={{ 
                           flexWrap: 'nowrap',
-                          minWidth: 0 // Enable text truncation
+                          minWidth: 0
                         }}
                       >
                         <IconButton 
@@ -847,33 +848,51 @@ function LinguaSlide() {
                         </IconButton>
                         <Box sx={{ 
                           display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 1,
-                          minWidth: 0, // Enable text truncation
+                          flexDirection: 'column',
+                          gap: 0.5,
+                          minWidth: 0,
                           flex: 1
                         }}>
-                          <Typography 
-                            variant="h6" 
-                            sx={{ 
-                              flexShrink: 0,
-                              fontSize: '1.1rem'
-                            }}
-                          >
-                            {item.word}
-                          </Typography>
-                          <Typography 
-                            variant="body2" 
-                            color="text.secondary"
-                            sx={{ 
-                              flexShrink: 1,
-                              minWidth: 0,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            ({item.phonetic})
-                          </Typography>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1
+                          }}>
+                            <Typography 
+                              variant="h6" 
+                              sx={{ 
+                                flexShrink: 0,
+                                fontSize: '1.1rem'
+                              }}
+                            >
+                              {item.word}
+                            </Typography>
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary"
+                              sx={{ 
+                                flexShrink: 1,
+                                minWidth: 0,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              ({item.phonetic})
+                            </Typography>
+                          </Box>
+                          {!item.completed && item.attempts && item.attempts > 2 && item.spokenWord && (
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                color: 'error.main',
+                                fontStyle: 'italic',
+                                fontSize: '0.85rem'
+                              }}
+                            >
+                              you said: {item.spokenWord}
+                            </Typography>
+                          )}
                         </Box>
                         {item.completed && (
                           item.skipped ? (
@@ -896,79 +915,92 @@ function LinguaSlide() {
                 ))}
             </Stack>
           )}
-
-          <Stack 
-            direction="row" 
-            spacing={2} 
-            justifyContent="center"
-            sx={{ mt: 4 }}
-          >
-            <IconButton
-              sx={{ 
-                width: 56,
-                height: 56,
-                bgcolor: isListening ? 'secondary.main' : '#4CAF50',
-                color: 'white',
-                '&:hover': {
-                  bgcolor: isListening ? 'secondary.dark' : '#45a049',
-                }
-              }}
-              onClick={toggleListening}
-            >
-              {isListening ? <MicIcon /> : <MicOffIcon />}
-            </IconButton>
-            <IconButton 
-              color="primary"
-              onClick={handleSkip}
-              disabled={gameState !== 'playing' || !isInitialized}
-              sx={{ 
-                width: 48, 
-                height: 48,
-                backgroundColor: 'primary.main',
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'action.disabledBackground',
-                  color: 'action.disabled'
-                }
-              }}
-            >
-              <SkipNextIcon />
-            </IconButton>
-            <IconButton 
-              color="primary" 
-              onClick={fetchWords}
-              sx={{ 
-                width: 48, 
-                height: 48,
-                backgroundColor: 'primary.main',
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                }
-              }}
-            >
-              <RefreshIcon />
-            </IconButton>
-            <IconButton 
-              sx={{ 
-                width: 48, 
-                height: 48,
-                backgroundColor: 'error.main',
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: 'error.dark',
-                }
-              }}
-              onClick={handleClose}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Stack>
         </Stack>
       </Card>
+
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          py: 2,
+          px: 3,
+          bgcolor: 'background.paper',
+          borderTop: 1,
+          borderColor: 'divider',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 2,
+          zIndex: 1000,
+          boxShadow: '0px -2px 8px rgba(0,0,0,0.1)'
+        }}
+      >
+        <IconButton
+          sx={{ 
+            width: 56,
+            height: 56,
+            bgcolor: isListening ? 'secondary.main' : '#4CAF50',
+            color: 'white',
+            '&:hover': {
+              bgcolor: isListening ? 'secondary.dark' : '#45a049',
+            }
+          }}
+          onClick={toggleListening}
+        >
+          {isListening ? <MicIcon /> : <MicOffIcon />}
+        </IconButton>
+
+        <IconButton 
+          onClick={handleSkip}
+          disabled={gameState !== 'playing' || !isInitialized}
+          sx={{ 
+            width: 48, 
+            height: 48,
+            backgroundColor: 'primary.main',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+            '&.Mui-disabled': {
+              backgroundColor: 'action.disabledBackground',
+              color: 'action.disabled'
+            }
+          }}
+        >
+          <SkipNextIcon />
+        </IconButton>
+
+        <IconButton 
+          onClick={fetchWords}
+          sx={{ 
+            width: 48, 
+            height: 48,
+            backgroundColor: 'primary.main',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            }
+          }}
+        >
+          <RefreshIcon />
+        </IconButton>
+
+        <IconButton 
+          onClick={handleClose}
+          sx={{ 
+            width: 48, 
+            height: 48,
+            backgroundColor: 'error.main',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'error.dark',
+            }
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Box>
     </Box>
   );
 }
