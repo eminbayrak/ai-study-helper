@@ -36,7 +36,7 @@ function App() {
               p: 3,
               mt: 8,
               backgroundColor: 'background.default',
-              minHeight: '100vh',
+              minHeight: '50vh',
             }}
           >
             <Routes>

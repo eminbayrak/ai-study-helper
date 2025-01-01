@@ -618,7 +618,7 @@ function LinguaSlide() {
         maxWidth: 800,
         mx: 'auto', 
         p: 3,
-        minHeight: '100vh',
+        minHeight: 'fit-content',
         bgcolor: 'background.default',
         color: 'text.primary',
       }}>
@@ -881,7 +881,7 @@ function LinguaSlide() {
       maxWidth: 800,
       mx: 'auto', 
       p: 3,
-      minHeight: '100vh',
+      minHeight: 'fit-content',
       bgcolor: 'background.default',
       color: 'text.primary',
     }}>
