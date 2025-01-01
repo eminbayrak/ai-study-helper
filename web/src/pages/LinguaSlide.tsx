@@ -10,21 +10,27 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   CircularProgress,
-  Alert,
   Button,
 } from '@mui/material';
-import MicIcon from '@mui/icons-material/Mic';
-import MicOffIcon from '@mui/icons-material/MicOff';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import CloseIcon from '@mui/icons-material/Close';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import StarIcon from '@mui/icons-material/Star';
+
+// Icons
+import {
+  Mic as MicIcon,
+  MicOff as MicOffIcon,
+  SkipNext as SkipNextIcon,
+  Refresh as RefreshIcon,
+  VolumeUp as VolumeUpIcon,
+  Close as CloseIcon,
+  PlayArrow as PlayArrowIcon,
+  CheckCircle as CheckCircleIcon,
+  Star as StarIcon,
+} from '@mui/icons-material';
+
+// Assets
 import successSound from '../assets/sounds/success.mp3';
 import failureSound from '../assets/sounds/failure.mp3';
 
+// Types
 type Difficulty = 'easy' | 'medium' | 'hard';
 type GameState = 'ready' | 'playing' | 'finished';
 
@@ -35,10 +41,10 @@ interface WordStatus {
   unlocked: boolean;
   spokenWord?: string;
   skipped?: boolean;
-  attempts?: number;
+  attempts: number;
   order: number;
-  hadIncorrectAttempt?: boolean;
-  currentAttemptIncorrect?: boolean;
+  hadIncorrectAttempt: boolean;
+  currentAttemptIncorrect: boolean;
 }
 
 interface GameResult {
@@ -47,7 +53,8 @@ interface GameResult {
   accuracy: number;
 }
 
-const DIFFICULTY_TIME_LIMITS = {
+// Constants
+const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
   easy: 30,
   medium: 40,
   hard: 50,
@@ -531,7 +538,9 @@ function LinguaSlide() {
           p: 4,
           bgcolor: 'background.paper',
           borderRadius: 2,
-          boxShadow: 1
+          border: 1,
+          borderColor: 'divider',
+          boxShadow: 'none'
         }}>
           <Stack spacing={6} alignItems="center">
             <Typography variant="h6" color="text.secondary">
@@ -561,7 +570,6 @@ function LinguaSlide() {
                 width: 100,
                 height: 100,
                 backgroundColor: 'primary.main',
-                '&:hover': { backgroundColor: 'primary.dark' },
                 transition: 'transform 0.2s',
                 '&:hover': {
                   backgroundColor: 'primary.dark',
@@ -609,7 +617,9 @@ function LinguaSlide() {
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 2,
-        boxShadow: 1
+        border: 1,
+        borderColor: 'divider',
+        boxShadow: 'none'
       }}>
         <Typography 
           variant="h4" 
@@ -779,7 +789,9 @@ function LinguaSlide() {
         p: 3,
         bgcolor: 'background.paper',
         borderRadius: 2,
-        boxShadow: 1,
+        border: 1,
+        borderColor: 'divider',
+        boxShadow: 'none',
         mb: 8
       }}>
         <Stack spacing={3}>
@@ -814,16 +826,23 @@ function LinguaSlide() {
                   <Card 
                     key={item.order || index}
                     sx={{ 
-                      bgcolor: 'background.paper',
+                      bgcolor: (!item.completed && item.unlocked) 
+                        ? 'action.hover'
+                        : 'background.paper',
                       opacity: item.unlocked ? 1 : 0.5,
                       transition: 'all 0.3s',
-                      border: (!item.completed && item.unlocked) 
-                        ? item.currentAttemptIncorrect 
-                          ? '2px solid #ff4444'
-                          : '2px solid #4caf50'
-                        : 'none',
+                      borderRadius: 2,
+                      border: '2px solid',
+                      borderColor: (!item.completed && item.unlocked)
+                        ? 'divider'
+                        : item.completed && !item.hadIncorrectAttempt && !item.skipped
+                          ? 'success.main'
+                          : 'warning.main',
+                      boxShadow: 'none',
                       '&:hover': {
-                        bgcolor: 'action.hover',
+                        bgcolor: (!item.completed && item.unlocked)
+                          ? 'action.selected'
+                          : 'action.hover',
                       }
                     }}
                   >
@@ -933,7 +952,7 @@ function LinguaSlide() {
           justifyContent: 'center',
           gap: 2,
           zIndex: 1000,
-          boxShadow: '0px -2px 8px rgba(0,0,0,0.1)'
+          boxShadow: 'none'
         }}
       >
         <IconButton
