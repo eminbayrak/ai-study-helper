@@ -47,6 +47,7 @@ interface WordStatus {
   order: number;
   hadIncorrectAttempt: boolean;
   currentAttemptIncorrect: boolean;
+  inactivitySkip?: boolean;
 }
 
 interface GameResult {
@@ -142,8 +143,9 @@ function LinguaSlide() {
     };
   }, [gameState]);
 
+  // Timer for countdown
   useEffect(() => {
-    if (gameState === 'playing') {
+    if (gameState === 'playing' && !isLoading) {
       // Clear any existing timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -167,14 +169,13 @@ function LinguaSlide() {
       }
     }
 
-    // Cleanup on unmount or gameState change
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [gameState]); // Only depend on gameState
+  }, [gameState, isLoading]); // Add isLoading dependency
 
   const startGame = async () => {
     setIsStarting(true);
@@ -187,14 +188,14 @@ function LinguaSlide() {
       // Fetch words first
       await fetchWords();
       
-      // Set states after words are fetched
+      // Only start timers and game after words are loaded
       setTimeLeft(DIFFICULTY_TIME_LIMITS[difficulty]);
       setProgress(0);
-      
-      // Update game state - this will trigger the timer useEffect
       updateGameState('playing');
       isInitializedRef.current = true;
       setIsInitialized(true);
+      setLastSpokenTimestamp(Date.now());
+      setShowInactiveWarning(false);
 
       // Initialize speech recognition
       if ('webkitSpeechRecognition' in window) {
@@ -204,11 +205,7 @@ function LinguaSlide() {
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
-          console.log('Speech recognition started, states:', {
-            gameState: gameStateRef.current,
-            isInitialized: isInitializedRef.current,
-            wordListLength: wordListRef.current.length
-          });
+          console.log('Speech recognition started');
           setIsListening(true);
         };
 
@@ -237,8 +234,6 @@ function LinguaSlide() {
         recognition.start();
       }
 
-      setLastSpokenTimestamp(Date.now());
-      setShowInactiveWarning(false);
     } catch (error) {
       console.error('Error starting game:', error);
       updateGameState('ready');
@@ -352,6 +347,7 @@ function LinguaSlide() {
         'bare': ['bear'],
         'wear': ['where', 'ware'],
         'flour': ['flower'],
+        'grey': ['gray'],
         'grown': ['groan', 'groan'],
         'hole': ['whole', 'hol'],
         'made': ['maid', 'mayd'],
@@ -568,9 +564,9 @@ function LinguaSlide() {
     };
   }, []);
 
-  // Add this useEffect to monitor speaking inactivity
+  // Inactivity monitor
   useEffect(() => {
-    if (gameState !== 'playing' || !isInitialized) return;
+    if (gameState !== 'playing' || !isInitialized || isLoading) return;
 
     const inactivityCheck = setInterval(() => {
       const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
@@ -588,7 +584,7 @@ function LinguaSlide() {
     }, 1000);
 
     return () => clearInterval(inactivityCheck);
-  }, [gameState, isInitialized, lastSpokenTimestamp]);
+  }, [gameState, isInitialized, lastSpokenTimestamp, isLoading]); // Add isLoading dependency
 
   // Add this function to handle inactivity game end
   const endGameDueToInactivity = () => {
