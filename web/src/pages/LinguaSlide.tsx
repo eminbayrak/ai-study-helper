@@ -58,9 +58,9 @@ interface GameResult {
 
 // Constants
 const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
-  easy: 30,
-  medium: 40,
-  hard: 50,
+  easy: 45,
+  medium: 60,
+  hard: 75,
 };
 
 function LinguaSlide() {
