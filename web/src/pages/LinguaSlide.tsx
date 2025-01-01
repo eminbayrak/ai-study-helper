@@ -35,6 +35,7 @@ interface WordStatus {
   attempts?: number;
   order: number;
   hadIncorrectAttempt?: boolean;
+  currentAttemptIncorrect?: boolean;
 }
 
 interface GameResult {
@@ -366,10 +367,10 @@ function LinguaSlide() {
           ...word,
           completed: isCorrect,
           skipped: false,
-          // Keep the first incorrect attempt if there was one
           spokenWord: hadIncorrectAttempt ? word.spokenWord : spokenLower,
           attempts: newAttempts,
-          hadIncorrectAttempt: hadIncorrectAttempt || !isCorrect
+          hadIncorrectAttempt: hadIncorrectAttempt || !isCorrect,
+          currentAttemptIncorrect: !isCorrect
         };
       }
       if (index === currentWord.order + 1 && isCorrect) {
@@ -503,13 +504,15 @@ function LinguaSlide() {
   if (gameState === 'finished' && gameResult) {
     return (
       <Box sx={{ 
-        maxWidth: 1000,
+        maxWidth: '100%',
+        width: '100%',
+        minHeight: '100vh',
         mx: 'auto', 
         p: 3,
         bgcolor: 'background.paper',
-        borderRadius: 2,
-        boxShadow: 3,
-        color: 'text.primary'
+        color: 'text.primary',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         <Typography 
           variant="h4" 
@@ -520,101 +523,124 @@ function LinguaSlide() {
           Practice Summary
         </Typography>
 
-        <Stack spacing={2}>
-          {wordList
-            .filter(w => w.skipped || w.hadIncorrectAttempt)
-            .map((word) => (
-              <Box
-                key={word.order}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  p: 2,
-                  borderBottom: 1,
-                  borderColor: 'divider'
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                  <IconButton 
-                    onClick={() => speak(word.word)}
-                    sx={{ color: 'text.primary' }}
-                  >
-                    <VolumeUpIcon />
-                  </IconButton>
-                  <Typography sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {word.word}
-                    <CloseIcon 
-                      sx={{ 
-                        color: 'error.main',
-                        fontSize: '1rem'
-                      }}
-                    />
-                    {word.skipped && (
-                      <Typography 
-                        component="span" 
-                        sx={{ 
-                          color: 'text.secondary',
-                          fontStyle: 'italic',
-                          ml: 1 
-                        }}
-                      >
-                        (skipped)
-                      </Typography>
-                    )}
-                    {!word.skipped && word.spokenWord && (
-                      <Typography 
-                        component="span" 
-                        sx={{ 
-                          color: 'text.secondary',
-                          fontStyle: 'italic',
-                          ml: 1 
-                        }}
-                      >
-                        (you said: {word.spokenWord})
-                      </Typography>
-                    )}
-                  </Typography>
-                </Box>
-                <Typography 
-                  sx={{ 
-                    color: 'text.secondary',
-                    minWidth: 100,
-                    textAlign: 'right'
+        <Box sx={{ maxWidth: 1200, width: '100%', mx: 'auto', flex: 1 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Words to Practice:
+          </Typography>
+
+          <Stack spacing={2}>
+            {wordList
+              .filter(w => w.skipped || w.hadIncorrectAttempt)
+              .map((word) => (
+                <Box
+                  key={word.order}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 2,
+                    borderBottom: 1,
+                    borderColor: 'divider'
                   }}
                 >
-                  {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
-                </Typography>
-              </Box>
-            ))}
-        </Stack>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                    <IconButton 
+                      onClick={() => speak(word.word)}
+                      sx={{ color: 'text.primary' }}
+                    >
+                      <VolumeUpIcon />
+                    </IconButton>
+                    <Typography sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {word.word}
+                      <CloseIcon 
+                        sx={{ 
+                          color: 'error.main',
+                          fontSize: '1rem'
+                        }}
+                      />
+                      {word.skipped && (
+                        <Typography 
+                          component="span" 
+                          sx={{ 
+                            color: 'text.secondary',
+                            fontStyle: 'italic',
+                            ml: 1 
+                          }}
+                        >
+                          (skipped)
+                        </Typography>
+                      )}
+                      {!word.skipped && word.spokenWord && (
+                        <Typography 
+                          component="span" 
+                          sx={{ 
+                            color: 'text.secondary',
+                            fontStyle: 'italic',
+                            ml: 1 
+                          }}
+                        >
+                          (you said: {word.spokenWord})
+                        </Typography>
+                      )}
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    sx={{ 
+                      color: 'text.secondary',
+                      minWidth: 100,
+                      textAlign: 'right'
+                    }}
+                  >
+                    {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
+                  </Typography>
+                </Box>
+              ))}
+          </Stack>
+        </Box>
 
-        <Button
-          variant="contained"
-          onClick={() => {
-            setGameState('ready');
-            setGameResult(null);
-          }}
-          sx={{ 
-            mt: 4,
-            mx: 'auto',
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            py: 2,
+            px: 3,
+            bgcolor: 'background.paper',
+            borderTop: 1,
+            borderColor: 'divider',
             display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            bgcolor: '#FF6B6B',
-            color: 'white',
-            '&:hover': {
-              bgcolor: '#FF5252'
-            },
-            px: 4,
-            py: 1.5,
-            borderRadius: 2,
-            fontSize: '1rem'
+            justifyContent: 'center',
+            zIndex: 1000
           }}
         >
-          <RefreshIcon />
-          Try Again
-        </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setGameState('ready');
+              setGameResult(null);
+            }}
+            sx={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              bgcolor: '#FF6B6B',
+              color: 'white',
+              '&:hover': {
+                bgcolor: '#FF5252'
+              },
+              px: 4,
+              py: 1.5,
+              borderRadius: 2,
+              fontSize: '1rem'
+            }}
+          >
+            <RefreshIcon />
+            Try Again
+          </Button>
+        </Box>
+
+        <Box sx={{ height: 80 }} />
       </Box>
     );
   }
@@ -669,7 +695,11 @@ function LinguaSlide() {
                     bgcolor: 'background.paper',
                     opacity: item.unlocked ? 1 : 0.5,
                     transition: 'all 0.3s',
-                    border: (!item.completed && item.unlocked) ? '2px solid #4caf50' : 'none',
+                    border: (!item.completed && item.unlocked) 
+                      ? item.currentAttemptIncorrect 
+                        ? '2px solid #ff4444'  // Red border for incorrect attempt
+                        : '2px solid #4caf50'  // Green border for current word
+                      : 'none',
                     '&:hover': {
                       bgcolor: 'action.hover',
                     }
