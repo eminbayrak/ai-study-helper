@@ -576,12 +576,12 @@ function LinguaSlide() {
       const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
       
       // Show warning at 5 seconds of inactivity
-      if (timeSinceLastSpoken >= 5000 && timeSinceLastSpoken < 10000) {
+      if (timeSinceLastSpoken >= 8000 && timeSinceLastSpoken < 12000) {
         setShowInactiveWarning(true);
       }
       
       // End game at 10 seconds of inactivity
-      if (timeSinceLastSpoken >= 10000) {
+      if (timeSinceLastSpoken >= 15000) {
         clearInterval(inactivityCheck);
         endGameDueToInactivity();
       }
