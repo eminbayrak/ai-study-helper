@@ -305,3 +305,27 @@ button:focus-visible {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
+
+/* Add these styles for navbar blur effect */
+.navbar-blur {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Ensure the navbar is on top of other elements */
+.MuiAppBar-root {
+  z-index: 1100;
+}
+
+/* Add support for backdrop-filter in Firefox */
+@supports not (backdrop-filter: blur(10px)) {
+  .navbar-blur {
+    background: rgba(15, 23, 42, 0.9) !important;
+  }
+  
+  @media (prefers-color-scheme: light) {
+    .navbar-blur {
+      background: rgba(248, 250, 252, 0.9) !important;
+    }
+  }
+}

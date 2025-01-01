@@ -10,37 +10,36 @@ function Navbar({ onMenuClick }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleMenuClick = () => {
-    setIsOpen(!isOpen);
-    onMenuClick();
-  };
-
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
+      setIsScrolled(window.scrollY > 20);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleMenuClick = () => {
+    setIsOpen(!isOpen);
+    onMenuClick();
+  };
+
   return (
     <AppBar 
       position="fixed"
+      className={isScrolled ? 'navbar-blur' : ''}
       sx={{
         background: isScrolled 
-          ? 'rgba(36, 36, 36, 0.8)'
+          ? 'rgba(15, 23, 42, 0.7)'
           : 'transparent',
-        backdropFilter: isScrolled ? 'blur(10px)' : 'none',
-        boxShadow: isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
+        boxShadow: 'none',
         transition: 'all 0.3s ease-in-out',
-        '&.MuiAppBar-root': {
-          backgroundImage: 'none',
-        },
+        borderBottom: isScrolled ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
         '@media (prefers-color-scheme: light)': {
           background: isScrolled 
-            ? 'rgba(255, 255, 255, 0.8)'
+            ? 'rgba(248, 250, 252, 0.7)'
             : 'transparent',
+          borderBottom: isScrolled ? '1px solid rgba(0, 0, 0, 0.1)' : 'none',
         }
       }}
     >

@@ -256,69 +256,98 @@ function LinguaSlide() {
 
     // Common speech recognition substitutions and homophones
     const substitutions: { [key: string]: string[] } = {
-      // Numbers and their word forms
-      'tree': ['3', 'three'],
-      'four': ['for', '4', 'fore'],
-      'two': ['to', 'too', '2'],
-      'one': ['won', '1'],
-      'eight': ['ate', '8'],
-      'six': ['sicks', '6'],
+        // Numbers and their word forms
+        'tree': ['3', 'three'],
+        'four': ['for', '4', 'fore'],
+        'two': ['to', 'too', '2'],
+        'one': ['won', '1'],
+        'eight': ['ate', '8'],
+        'six': ['sicks', '6'],
+        'seven': ['sevin', '7'],
+        'nine': ['9', 'nighn'],
+        'ten': ['10', 'tenn'],
+        'zero': ['0', 'oh'],
       
-      // Common homophones
-      'red': ['read', 'red'],
-      'dog': ['doe', 'talk', 'dough'],
-      'read': ['red', 'reed'],
-      'big': ['bigh'],
-      'ball': ['bawl', 'bowl', 'bawl'],
-      'blue': ['blew'],
-      'sea': ['see', 'c'],
-      'eye': ['i'],
-      'hi': ['high'],
-      'hire': ['higher'],
-      'hour': ['our'],
-      'meat': ['meet', 'mete'],
-      'write': ['right', 'rite'],
-      'new': ['knew'],
-      'know': ['no'],
-      'nose': ['knows'],
-      'way': ['weigh', 'whey'],
-      'wait': ['weight'],
-      'wood': ['would'],
-      'hear': ['here'],
-      'there': ['their', "they're"],
-      'pair': ['pear', 'pare'],
-      'bare': ['bear'],
-      'wear': ['where'],
-      'flour': ['flower'],
-      'grown': ['groan'],
-      'hole': ['whole'],
-      'made': ['maid'],
-      'mail': ['male'],
-      'rain': ['reign', 'rein'],
-      'raise': ['rays', 'raze'],
-      'run': ['ron', 'rum'],
-      'role': ['roll'],
-      'sale': ['sail'],
-      'scene': ['seen'],
-      'steal': ['steel'],
-      'sweet': ['suite'],
-      'sun': ['son'],
-      'tail': ['tale'],
-      'threw': ['through'],
-      'tide': ['tied'],
-      'toe': ['tow'],
-      'weak': ['week'],
-      'which': ['witch'],
+        // Common homophones
+        'red': ['read', 'red'],
+        'dog': ['doe', 'talk', 'dough', 'dock'],
+        'read': ['red', 'reed', 'reeded'],
+        'big': ['bigh', 'beg'],
+        'ball': ['bawl', 'bowl', 'paul'],
+        'blue': ['blew'],
+        'cup': ['cop', 'cub'],
+        'sea': ['see', 'c'],
+        'eye': ['i', 'aye'],
+        'hi': ['high'],
+        'hire': ['higher', 'hier'],
+        'hour': ['our', 'are'],
+        'meat': ['meet', 'mete'],
+        'write': ['right', 'rite', 'wright'],
+        'new': ['knew'],
+        'know': ['no', 'knowe'],
+        'nose': ['knows', 'noze'],
+        'way': ['weigh', 'whey'],
+        'wait': ['weight', 'waite'],
+        'wood': ['would', 'wud'],
+        'hear': ['here', 'heir'],
+        'there': ['their', "they're"],
+        'pair': ['pear', 'pare'],
+        'pen': ['pan', 'pam'],
+        'bare': ['bear'],
+        'wear': ['where', 'ware'],
+        'flour': ['flower'],
+        'grown': ['groan', 'groan'],
+        'hole': ['whole', 'hol'],
+        'made': ['maid', 'mayd'],
+        'mail': ['male', 'maile'],
+        'rain': ['reign', 'rein'],
+        'raise': ['rays', 'raze'],
+        'run': ['ron', 'rum'],
+        'role': ['roll', 'roal'],
+        'sale': ['sail', 'sel'],
+        'scene': ['seen', 'seene'],
+        'steal': ['steel', 'stil'],
+        'sweet': ['suite', 'sweat'],
+        'sun': ['son', 'song'],
+        'tail': ['tale', 'tale'],
+        'threw': ['through', 'thru'],
+        'tide': ['tied'],
+        'toe': ['tow'],
+        'weak': ['week', 'weake'],
+        'which': ['witch', 'wich'],
       
-      // Similar sounding words
-      'accept': ['except'],
-      'affect': ['effect'],
-      'allowed': ['aloud'],
-      'capital': ['capitol'],
-      'principal': ['principle'],
-      'than': ['then'],
-      'weather': ['whether'],
-    };
+        // Similar sounding words
+        'accept': ['except'],
+        'affect': ['effect'],
+        'allowed': ['aloud'],
+        'capital': ['capitol'],
+        'principal': ['principle'],
+        'than': ['then'],
+        'weather': ['whether'],
+        
+        // Added extra cases for improved recognition
+        'peace': ['piece', 'pees'],
+        'break': ['brake', 'braek'],
+        'knight': ['night'],
+        'sight': ['site', 'cite'],
+        'by': ['buy', 'bye'],
+        'plane': ['plain'],
+        'be': ['bee'],
+        'won': ['one'],
+        'lead': ['led'],
+        'carat': ['carrot'],
+        'cell': ['sell'],
+        'male': ['mail'],
+        'pear': ['pair'],
+        'steak': ['stake'],
+        'flower': ['flour'],
+        'heel': ['heal'],
+        'right': ['write', 'rite', 'wright'],
+        'knows': ['nose'],
+        'its': ["it's"],
+        'your': ["you're", 'yore'],
+      };
+      
 
     // Check substitutions
     if (substitutions[target] && substitutions[target].includes(cleanSpoken)) {
@@ -466,7 +495,7 @@ function LinguaSlide() {
     return (
       <Box sx={{ maxWidth: 600, mx: 'auto', textAlign: 'center', py: 4 }}>
         <Typography variant="h4" gutterBottom>
-          Pronunciation Game
+          Lingua Slide
         </Typography>
         
         <Stack spacing={3} alignItems="center">
@@ -502,100 +531,141 @@ function LinguaSlide() {
   }
 
   if (gameState === 'finished' && gameResult) {
+    const hasWordsToReview = wordList.some(w => w.skipped || w.hadIncorrectAttempt);
+
     return (
       <Box sx={{ 
         maxWidth: '100%',
-        width: '100%',
-        minHeight: '100vh',
+        width: 'fit-content',
+        minHeight: 'fit-content',
         mx: 'auto', 
-        p: 3,
+        p: 2,
+        px: 4,
         bgcolor: 'background.paper',
         color: 'text.primary',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        borderRadius: 2,
+        boxShadow: 1
       }}>
         <Typography 
           variant="h4" 
           align="center" 
           gutterBottom
-          sx={{ color: 'text.primary', mb: 4 }}
+          sx={{ color: 'text.primary', mb: 2 }}
         >
           Practice Summary
         </Typography>
 
-        <Box sx={{ maxWidth: 1200, width: '100%', mx: 'auto', flex: 1 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Words to Practice:
-          </Typography>
+        <Box sx={{ 
+          width: '100%',
+          minWidth: { xs: '100%', sm: 550, md: 650 },
+          maxWidth: { xs: '100%', sm: 650, md: 750 },
+          mx: 'auto',
+          flex: '1 0 auto',
+          mb: 6
+        }}>
+          {hasWordsToReview ? (
+            <>
+              <Typography variant="h6" sx={{ mb: 1 }}>
+                Words to Practice:
+              </Typography>
 
-          <Stack spacing={2}>
-            {wordList
-              .filter(w => w.skipped || w.hadIncorrectAttempt)
-              .map((word) => (
-                <Box
-                  key={word.order}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    p: 2,
-                    borderBottom: 1,
-                    borderColor: 'divider'
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                    <IconButton 
-                      onClick={() => speak(word.word)}
-                      sx={{ color: 'text.primary' }}
+              <Stack spacing={1}>
+                {wordList
+                  .filter(w => w.skipped || w.hadIncorrectAttempt)
+                  .map((word) => (
+                    <Box
+                      key={word.order}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        p: 1.5,
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        width: '100%'
+                      }}
                     >
-                      <VolumeUpIcon />
-                    </IconButton>
-                    <Typography sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {word.word}
-                      <CloseIcon 
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                        <IconButton 
+                          onClick={() => speak(word.word)}
+                          sx={{ color: 'text.primary' }}
+                        >
+                          <VolumeUpIcon />
+                        </IconButton>
+                        <Typography sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {word.word}
+                          <CloseIcon 
+                            sx={{ 
+                              color: 'error.main',
+                              fontSize: '1rem'
+                            }}
+                          />
+                          {word.skipped && (
+                            <Typography 
+                              component="span" 
+                              sx={{ 
+                                color: 'text.secondary',
+                                fontStyle: 'italic',
+                                ml: 1 
+                              }}
+                            >
+                              (skipped)
+                            </Typography>
+                          )}
+                          {!word.skipped && word.spokenWord && (
+                            <Typography 
+                              component="span" 
+                              sx={{ 
+                                color: 'text.secondary',
+                                fontStyle: 'italic',
+                                ml: 1 
+                              }}
+                            >
+                              (you said: {word.spokenWord})
+                            </Typography>
+                          )}
+                        </Typography>
+                      </Box>
+                      <Typography 
                         sx={{ 
-                          color: 'error.main',
-                          fontSize: '1rem'
+                          color: 'text.secondary',
+                          minWidth: 100,
+                          textAlign: 'right'
                         }}
-                      />
-                      {word.skipped && (
-                        <Typography 
-                          component="span" 
-                          sx={{ 
-                            color: 'text.secondary',
-                            fontStyle: 'italic',
-                            ml: 1 
-                          }}
-                        >
-                          (skipped)
-                        </Typography>
-                      )}
-                      {!word.skipped && word.spokenWord && (
-                        <Typography 
-                          component="span" 
-                          sx={{ 
-                            color: 'text.secondary',
-                            fontStyle: 'italic',
-                            ml: 1 
-                          }}
-                        >
-                          (you said: {word.spokenWord})
-                        </Typography>
-                      )}
-                    </Typography>
-                  </Box>
-                  <Typography 
-                    sx={{ 
-                      color: 'text.secondary',
-                      minWidth: 100,
-                      textAlign: 'right'
-                    }}
-                  >
-                    {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
-                  </Typography>
-                </Box>
-              ))}
-          </Stack>
+                      >
+                        {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Stack>
+            </>
+          ) : (
+            <Box sx={{ 
+              textAlign: 'center', 
+              py: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1.5,
+              minHeight: 'fit-content'
+            }}>
+              <CheckCircleIcon sx={{ 
+                fontSize: 64, 
+                color: 'primary.main' 
+              }} />
+              <Typography variant="h4" sx={{ color: 'text.primary' }}>
+                Perfect Pronunciation!
+              </Typography>
+              <Typography sx={{ 
+                color: 'text.secondary',
+                fontSize: '1.1rem'
+              }}>
+                Amazing job! You nailed every word.
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         <Box
@@ -604,8 +674,8 @@ function LinguaSlide() {
             bottom: 0,
             left: 0,
             right: 0,
-            py: 2,
-            px: 3,
+            py: 1,
+            px: 2,
             bgcolor: 'background.paper',
             borderTop: 1,
             borderColor: 'divider',
@@ -629,18 +699,18 @@ function LinguaSlide() {
               '&:hover': {
                 bgcolor: '#FF5252'
               },
-              px: 4,
-              py: 1.5,
+              px: 3,
+              py: 1,
               borderRadius: 2,
-              fontSize: '1rem'
+              fontSize: '0.9rem'
             }}
           >
-            <RefreshIcon />
+            <RefreshIcon sx={{ fontSize: '1.2rem' }} />
             Try Again
           </Button>
         </Box>
 
-        <Box sx={{ height: 80 }} />
+        <Box sx={{ height: 48 }} />
       </Box>
     );
   }
@@ -657,7 +727,7 @@ function LinguaSlide() {
       flexDirection: 'column'
     }}>
       <Typography variant="h4" gutterBottom>
-        Pronunciation Game
+        Lingua Slide
       </Typography>
 
       <Stack spacing={2}>
