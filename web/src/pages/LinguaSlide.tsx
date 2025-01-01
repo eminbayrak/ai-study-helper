@@ -209,18 +209,15 @@ function LinguaSlide() {
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
-          console.log('Speech recognition started');
           setIsListening(true);
         };
 
         recognition.onend = () => {
-          console.log('Speech recognition ended');
           setIsListening(false);
           if (gameStateRef.current === 'playing' && isInitializedRef.current) {
             try {
               recognition.start();
             } catch (error) {
-              console.error('Error restarting recognition:', error);
             }
           }
         };
@@ -228,12 +225,10 @@ function LinguaSlide() {
         recognition.onresult = (event: any) => {
           const text = event.results[event.results.length - 1][0].transcript;
           if (profanity.check(text)) {
-            console.log('Speech recognition result: [inappropriate word filtered]');
             failureAudio.current.currentTime = 0;
             failureAudio.current.play();
             return;
           }
-          console.log('Speech recognition result:', text);
           if (gameStateRef.current === 'playing' && isInitializedRef.current) {
             setLastSpokenWord(text.toLowerCase().trim());
             checkPronunciation(text);
@@ -245,7 +240,6 @@ function LinguaSlide() {
       }
 
     } catch (error) {
-      console.error('Error starting game:', error);
       updateGameState('ready');
       isInitializedRef.current = false;
     } finally {
@@ -296,11 +290,7 @@ function LinguaSlide() {
 
   // Update the isSimilarPronunciation function
   const isSimilarPronunciation = (spoken: string, target: string) => {
-    console.log('Checking similarity:', { spoken, target });
-
-    // Direct match
     if (spoken === target) {
-      console.log('Direct match found');
       return true;
     }
 
@@ -309,7 +299,6 @@ function LinguaSlide() {
     const cleanTarget = target.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
     
     if (cleanSpoken === cleanTarget) {
-      console.log('Match found after cleaning');
       return true;
     }
 
@@ -411,12 +400,9 @@ function LinguaSlide() {
 
     // Check substitutions
     if (substitutions[target] && substitutions[target].includes(cleanSpoken)) {
-      console.log('Substitution match found');
       return true;
     }
 
-    // Do NOT check for partial matches anymore
-    console.log('No match found');
     return false;
   };
 
@@ -436,19 +422,7 @@ function LinguaSlide() {
 
     setHasSpokenOnce(true);
     
-    console.log('Checking pronunciation:', { 
-      spokenText, 
-      gameState: gameStateRef.current, 
-      isInitialized: isInitializedRef.current,
-      wordListLength: wordListRef.current.length
-    });
-    
     if (!spokenText || gameStateRef.current !== 'playing' || !isInitializedRef.current) {
-      console.log('Invalid state for pronunciation check:', { 
-        spokenText, 
-        gameState: gameStateRef.current, 
-        isInitialized: isInitializedRef.current
-      });
       return;
     }
     
