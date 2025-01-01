@@ -81,6 +81,7 @@ function LinguaSlide() {
   const failureAudio = useRef(new Audio(failureSound));
   const [lastSpokenTimestamp, setLastSpokenTimestamp] = useState<number>(Date.now());
   const [showInactiveWarning, setShowInactiveWarning] = useState(false);
+  const [hasSpokenOnce, setHasSpokenOnce] = useState(false);
 
   // Add gameStateRef to track current state in callbacks
   const gameStateRef = useRef<GameState>('ready');
@@ -179,6 +180,7 @@ function LinguaSlide() {
 
   const startGame = async () => {
     setIsStarting(true);
+    setHasSpokenOnce(false);
     try {
       // Reset states
       isInitializedRef.current = false;
@@ -414,6 +416,8 @@ function LinguaSlide() {
 
   // Update the checkPronunciation function with more detailed logging
   const checkPronunciation = (spokenText: string) => {
+    setHasSpokenOnce(true);
+    
     console.log('Checking pronunciation:', { 
       spokenText, 
       gameState: gameStateRef.current, 
@@ -566,25 +570,25 @@ function LinguaSlide() {
 
   // Inactivity monitor
   useEffect(() => {
-    if (gameState !== 'playing' || !isInitialized || isLoading) return;
+    if (gameState !== 'playing' || !isInitialized || isLoading || hasSpokenOnce) return;
 
     const inactivityCheck = setInterval(() => {
       const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
       
-      // Show warning at 5 seconds of inactivity
-      if (timeSinceLastSpoken >= 8000 && timeSinceLastSpoken < 12000) {
+      // Show warning at 10 seconds of inactivity
+      if (timeSinceLastSpoken >= 10000) {
         setShowInactiveWarning(true);
       }
       
-      // End game at 10 seconds of inactivity
-      if (timeSinceLastSpoken >= 15000) {
+      // End game at 20 seconds of inactivity
+      if (timeSinceLastSpoken >= 20000) {
         clearInterval(inactivityCheck);
         endGameDueToInactivity();
       }
     }, 1000);
 
     return () => clearInterval(inactivityCheck);
-  }, [gameState, isInitialized, lastSpokenTimestamp, isLoading]); // Add isLoading dependency
+  }, [gameState, isInitialized, lastSpokenTimestamp, isLoading, hasSpokenOnce]); // Add hasSpokenOnce dependency
 
   // Add this function to handle inactivity game end
   const endGameDueToInactivity = () => {
@@ -1123,8 +1127,6 @@ function LinguaSlide() {
 
       <Snackbar
         open={showInactiveWarning}
-        autoHideDuration={5000}
-        onClose={() => setShowInactiveWarning(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert 
