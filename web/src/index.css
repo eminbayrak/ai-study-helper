@@ -329,3 +329,16 @@ button:focus-visible {
     }
   }
 }
+
+@keyframes glow {
+  from {
+    filter: drop-shadow(0 0 2px rgba(255, 107, 129, 0.4))
+           drop-shadow(0 0 4px rgba(255, 107, 129, 0.3));
+    transform: scale(1);
+  }
+  to {
+    filter: drop-shadow(0 0 4px rgba(255, 107, 129, 0.6))
+           drop-shadow(0 0 8px rgba(255, 107, 129, 0.4));
+    transform: scale(1.1);
+  }
+}
