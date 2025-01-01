@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -42,7 +42,7 @@ function App() {
             }}
           >
             <Routes>
-              <Route path="/" element={<LinguaSlide />} />
+              <Route path="/" element={<Navigate to="/linguaslide" replace />} />
               <Route path="/linguaslide" element={<LinguaSlide />} />
             </Routes>
           </Box>
