@@ -1,49 +1,98 @@
 import { createTheme } from '@mui/material';
+import '@fontsource/inter/300.css';  // Light
+import '@fontsource/inter/400.css';  // Regular
+import '@fontsource/inter/500.css';  // Medium
+import '@fontsource/inter/600.css';  // Semi-bold
+import '@fontsource/inter/700.css';  // Bold
 
 export const getTheme = (mode: 'light' | 'dark') => createTheme({
   palette: {
     mode,
     ...(mode === 'dark' ? {
-      // Dark mode colors
       primary: {
-        main: '#4CAF50', // Green for success
+        main: '#FF6B81', // dark mode primary
       },
       secondary: {
-        main: '#FF4444', // Red for errors/skip
+        main: '#34D399', // dark mode secondary
       },
       background: {
-        default: '#0A1929',
-        paper: '#132F4C',
+        default: '#0F172A', // dark background
+        paper: '#1E293B',  // dark surface
       },
       text: {
-        primary: '#fff',
-        secondary: 'rgba(255, 255, 255, 0.7)',
+        primary: '#F8FAFC',
+        secondary: '#94A3B8',
+      },
+      error: {
+        main: '#F87171',
+      },
+      success: {
+        main: '#34D399',
       },
     } : {
-      // Light mode colors
       primary: {
-        main: '#4CAF50',
+        main: '#F54B64', // light mode primary
       },
       secondary: {
-        main: '#FF4444',
+        main: '#22C55E', // light mode secondary
+      },
+      background: {
+        default: '#F8FAFC', // light background
+        paper: '#FFFFFF',   // light surface
+      },
+      text: {
+        primary: '#1E293B',
+        secondary: '#64748B',
+      },
+      error: {
+        main: '#EF4444',
+      },
+      success: {
+        main: '#10B981',
       },
     }),
+  },
+  typography: {
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+    h1: {
+      fontWeight: 600,
+    },
+    h2: {
+      fontWeight: 600,
+    },
+    h3: {
+      fontWeight: 600,
+    },
+    h4: {
+      fontWeight: 500,
+    },
+    h5: {
+      fontWeight: 500,
+    },
+    h6: {
+      fontWeight: 500,
+    },
+    button: {
+      fontWeight: 500,
+      textTransform: 'none', // Prevents all-caps text
+    },
   },
   components: {
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          ...(mode === 'dark' && {
-            backgroundColor: '#132F4C',
-          }),
+          backgroundColor: mode === 'dark' ? '#1E293B' : '#FFFFFF',
+          borderColor: mode === 'dark' ? '#334155' : '#E2E8F0',
         },
       },
     },
     MuiIconButton: {
       styleOverrides: {
         root: {
-          borderRadius: '50%',
+          color: mode === 'dark' ? '#94A3B8' : '#94A3B8',
+          '&:hover': {
+            color: mode === 'dark' ? '#FF6B81' : '#F54B64',
+          },
         },
       },
     },
