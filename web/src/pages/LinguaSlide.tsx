@@ -11,6 +11,7 @@ import {
   ToggleButton,
   CircularProgress,
   Alert,
+  Button,
 } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
@@ -32,7 +33,8 @@ interface WordStatus {
   spokenWord?: string;
   skipped?: boolean;
   attempts?: number;
-  order?: number;
+  order: number;
+  hadIncorrectAttempt?: boolean;
 }
 
 interface GameResult {
@@ -234,7 +236,6 @@ function LinguaSlide() {
 
   // Update the isSimilarPronunciation function
   const isSimilarPronunciation = (spoken: string, target: string) => {
-    // Add debug logging
     console.log('Checking similarity:', { spoken, target });
 
     // Direct match
@@ -242,19 +243,13 @@ function LinguaSlide() {
       console.log('Direct match found');
       return true;
     }
-    
-    // Remove any punctuation and extra spaces
+
+    // Clean up the input
     const cleanSpoken = spoken.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
     const cleanTarget = target.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
     
     if (cleanSpoken === cleanTarget) {
       console.log('Match found after cleaning');
-      return true;
-    }
-
-    // Check if the spoken word is contained within the target or vice versa
-    if (cleanTarget.includes(cleanSpoken) || cleanSpoken.includes(cleanTarget)) {
-      console.log('Partial match found');
       return true;
     }
 
@@ -273,7 +268,7 @@ function LinguaSlide() {
       'dog': ['doe', 'talk', 'dough'],
       'read': ['red', 'reed'],
       'big': ['bigh'],
-      'ball': ['bawl'],
+      'ball': ['bawl', 'bowl', 'bawl'],
       'blue': ['blew'],
       'sea': ['see', 'c'],
       'eye': ['i'],
@@ -300,7 +295,7 @@ function LinguaSlide() {
       'mail': ['male'],
       'rain': ['reign', 'rein'],
       'raise': ['rays', 'raze'],
-      'run': ['ron'],
+      'run': ['ron', 'rum'],
       'role': ['roll'],
       'sale': ['sail'],
       'scene': ['seen'],
@@ -313,19 +308,24 @@ function LinguaSlide() {
       'toe': ['tow'],
       'weak': ['week'],
       'which': ['witch'],
+      
+      // Similar sounding words
+      'accept': ['except'],
+      'affect': ['effect'],
+      'allowed': ['aloud'],
+      'capital': ['capitol'],
+      'principal': ['principle'],
+      'than': ['then'],
+      'weather': ['whether'],
     };
 
     // Check substitutions
-    if (substitutions[target] && substitutions[target].includes(spoken)) {
-      console.log('Substitution match found (target as key)');
-      return true;
-    }
-    
-    if (substitutions[spoken] && substitutions[spoken].includes(target)) {
-      console.log('Substitution match found (spoken as key)');
+    if (substitutions[target] && substitutions[target].includes(cleanSpoken)) {
+      console.log('Substitution match found');
       return true;
     }
 
+    // Do NOT check for partial matches anymore
     console.log('No match found');
     return false;
   };
@@ -351,55 +351,39 @@ function LinguaSlide() {
     const spokenLower = spokenText.toLowerCase().trim();
     const currentWord = wordListRef.current.find(w => w.unlocked && !w.completed);
     
-    console.log('Current game state:', {
-      spokenWord: spokenLower,
-      currentWord: currentWord?.word,
-      isUnlocked: currentWord?.unlocked,
-      isCompleted: currentWord?.completed,
-      gameState: gameStateRef.current,
-      isInitialized: isInitializedRef.current
-    });
-
-    if (!currentWord) {
-      console.log('No current word found');
-      return;
-    }
+    if (!currentWord) return;
 
     const targetLower = currentWord.word.toLowerCase().trim();
     const isCorrect = spokenLower === targetLower || isSimilarPronunciation(spokenLower, targetLower);
 
-    console.log('Word comparison:', { 
-      spoken: spokenLower, 
-      target: targetLower, 
-      isCorrect,
-      currentWord
+    // Always update the word list with the attempt
+    const updatedWordList = wordListRef.current.map((word, index) => {
+      if (word === currentWord) {
+        const newAttempts = (word.attempts || 0) + 1;
+        const hadIncorrectAttempt = word.spokenWord && word.spokenWord !== word.word;
+        
+        return {
+          ...word,
+          completed: isCorrect,
+          skipped: false,
+          // Keep the first incorrect attempt if there was one
+          spokenWord: hadIncorrectAttempt ? word.spokenWord : spokenLower,
+          attempts: newAttempts,
+          hadIncorrectAttempt: hadIncorrectAttempt || !isCorrect
+        };
+      }
+      if (index === currentWord.order + 1 && isCorrect) {
+        return { ...word, unlocked: true };
+      }
+      return word;
     });
 
+    wordListRef.current = updatedWordList;
+    setWordList(updatedWordList);
+
     if (isCorrect) {
-      console.log('Correct pronunciation detected, updating word list');
-      const updatedWordList = wordListRef.current.map((word, index) => {
-        if (word === currentWord) {
-          return {
-            ...word,
-            completed: true,
-            skipped: false,
-            spokenWord: spokenLower,
-            attempts: (word.attempts || 0) + 1
-          };
-        }
-        if (index === currentWord.order + 1) {
-          return { ...word, unlocked: true };
-        }
-        return word;
-      });
-
-      console.log('Updated word list:', updatedWordList);
-      wordListRef.current = updatedWordList;
-      setWordList(updatedWordList);
       setProgress((currentWord.order + 1) * 10);
-
       if (updatedWordList.every(w => w.completed)) {
-        console.log('All words completed');
         setTimeout(() => endGame(), 500);
       }
     }
@@ -456,7 +440,7 @@ function LinguaSlide() {
     // Update both the ref and state
     wordListRef.current = updatedWordList;
     setWordList(updatedWordList);
-    setProgress((currentWord.order + 1) * 10);
+    setProgress(((currentWord.order ?? 0) + 1) * 10);
 
     // Check if all words are completed
     if (updatedWordList.every(w => w.completed)) {
@@ -518,43 +502,155 @@ function LinguaSlide() {
 
   if (gameState === 'finished' && gameResult) {
     return (
-      <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
-        <Typography variant="h4" gutterBottom>Practice Summary</Typography>
-        
+      <Box sx={{ 
+        maxWidth: 1000,
+        mx: 'auto', 
+        p: 3,
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 3,
+        color: 'text.primary'
+      }}>
+        <Typography 
+          variant="h4" 
+          align="center" 
+          gutterBottom
+          sx={{ color: 'text.primary', mb: 4 }}
+        >
+          Practice Summary
+        </Typography>
+
         <Stack spacing={2}>
-          <Typography>Words Completed: {gameResult.wordsCompleted}</Typography>
-          <Typography>Time Spent: {gameResult.timeSpent}s</Typography>
-          <Typography>Accuracy: {gameResult.accuracy}%</Typography>
-          
-          <IconButton
-            sx={{ 
-              alignSelf: 'center',
-              backgroundColor: 'primary.main',
-              color: 'white',
-              '&:hover': { backgroundColor: 'primary.dark' }
-            }}
-            onClick={() => {
-              setGameState('ready');
-              setGameResult(null);
-            }}
-          >
-            <RefreshIcon />
-          </IconButton>
+          {wordList
+            .filter(w => w.skipped || w.hadIncorrectAttempt)
+            .map((word) => (
+              <Box
+                key={word.order}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 2,
+                  borderBottom: 1,
+                  borderColor: 'divider'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                  <IconButton 
+                    onClick={() => speak(word.word)}
+                    sx={{ color: 'text.primary' }}
+                  >
+                    <VolumeUpIcon />
+                  </IconButton>
+                  <Typography sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {word.word}
+                    <CloseIcon 
+                      sx={{ 
+                        color: 'error.main',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    {word.skipped && (
+                      <Typography 
+                        component="span" 
+                        sx={{ 
+                          color: 'text.secondary',
+                          fontStyle: 'italic',
+                          ml: 1 
+                        }}
+                      >
+                        (skipped)
+                      </Typography>
+                    )}
+                    {!word.skipped && word.spokenWord && (
+                      <Typography 
+                        component="span" 
+                        sx={{ 
+                          color: 'text.secondary',
+                          fontStyle: 'italic',
+                          ml: 1 
+                        }}
+                      >
+                        (you said: {word.spokenWord})
+                      </Typography>
+                    )}
+                  </Typography>
+                </Box>
+                <Typography 
+                  sx={{ 
+                    color: 'text.secondary',
+                    minWidth: 100,
+                    textAlign: 'right'
+                  }}
+                >
+                  {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
+                </Typography>
+              </Box>
+            ))}
         </Stack>
+
+        <Button
+          variant="contained"
+          onClick={() => {
+            setGameState('ready');
+            setGameResult(null);
+          }}
+          sx={{ 
+            mt: 4,
+            mx: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            bgcolor: '#FF6B6B',
+            color: 'white',
+            '&:hover': {
+              bgcolor: '#FF5252'
+            },
+            px: 4,
+            py: 1.5,
+            borderRadius: 2,
+            fontSize: '1rem'
+          }}
+        >
+          <RefreshIcon />
+          Try Again
+        </Button>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
+    <Box sx={{ 
+      maxWidth: 800,
+      mx: 'auto', 
+      p: 2,
+      minHeight: '100vh',
+      bgcolor: 'background.default',
+      color: 'text.primary',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Typography variant="h4" gutterBottom>
         Pronunciation Game
       </Typography>
 
-      <Stack spacing={3}>
+      <Stack spacing={2}>
         <Box>
-          <Typography variant="h6">Time Left: {timeLeft}s</Typography>
-          <LinearProgress variant="determinate" value={(progress / 100) * 100} />
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Time Left: {timeLeft}s
+          </Typography>
+          <LinearProgress 
+            variant="determinate" 
+            value={(progress / 100) * 100}
+            sx={{
+              height: 8,
+              borderRadius: 4,
+              bgcolor: 'rgba(255, 255, 255, 0.1)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: 'primary.main',
+              }
+            }}
+          />
         </Box>
 
         {isLoading ? (
@@ -565,17 +661,24 @@ function LinguaSlide() {
         ) : (
           <Stack spacing={2}>
             {wordList
-              .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by original order
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
               .map((item, index) => (
                 <Card 
                   key={item.order || index}
                   sx={{ 
+                    bgcolor: 'background.paper',
                     opacity: item.unlocked ? 1 : 0.5,
                     transition: 'all 0.3s',
-                    border: (!item.completed && item.unlocked) ? '2px solid #4caf50' : 'none'
+                    border: (!item.completed && item.unlocked) ? '2px solid #4caf50' : 'none',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                    }
                   }}
                 >
-                  <CardContent sx={{ p: 2 }}>
+                  <CardContent sx={{ 
+                    p: 1,
+                    '&:last-child': { pb: 1 }
+                  }}>
                     <Stack 
                       direction="row" 
                       spacing={1} 
@@ -647,20 +750,30 @@ function LinguaSlide() {
           direction="row" 
           spacing={2} 
           justifyContent="center"
-          sx={{ mt: 2 }}
+          sx={{ 
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            py: 2,
+            px: 3,
+            bgcolor: 'background.default',
+            borderTop: 1,
+            borderColor: 'divider',
+            zIndex: 1000
+          }}
         >
           <IconButton
-            color={isListening ? 'secondary' : 'primary'}
-            onClick={toggleListening}
             sx={{ 
-              width: 48, 
-              height: 48,
-              backgroundColor: isListening ? 'secondary.main' : 'primary.main',
+              width: 56,
+              height: 56,
+              bgcolor: isListening ? 'secondary.main' : '#4CAF50',
               color: 'white',
               '&:hover': {
-                backgroundColor: isListening ? 'secondary.dark' : 'primary.dark',
+                bgcolor: isListening ? 'secondary.dark' : '#45a049',
               }
             }}
+            onClick={toggleListening}
           >
             {isListening ? <MicIcon /> : <MicOffIcon />}
           </IconButton>
@@ -714,6 +827,8 @@ function LinguaSlide() {
             <CloseIcon />
           </IconButton>
         </Stack>
+
+        <Box sx={{ height: 80 }} />
       </Stack>
     </Box>
   );
