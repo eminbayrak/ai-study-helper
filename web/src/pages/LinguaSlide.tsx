@@ -11,6 +11,8 @@ import {
   ToggleButton,
   CircularProgress,
   Button,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 
 // Icons
@@ -76,6 +78,8 @@ function LinguaSlide() {
   const [isInitialized, setIsInitialized] = useState(false);
   const successAudio = useRef(new Audio(successSound));
   const failureAudio = useRef(new Audio(failureSound));
+  const [lastSpokenTimestamp, setLastSpokenTimestamp] = useState<number>(Date.now());
+  const [showInactiveWarning, setShowInactiveWarning] = useState(false);
 
   // Add gameStateRef to track current state in callbacks
   const gameStateRef = useRef<GameState>('ready');
@@ -138,6 +142,40 @@ function LinguaSlide() {
     };
   }, [gameState]);
 
+  useEffect(() => {
+    if (gameState === 'playing') {
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+
+      // Start new timer
+      timerRef.current = window.setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            endGame();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      // Clear timer when not playing
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    // Cleanup on unmount or gameState change
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [gameState]); // Only depend on gameState
+
   const startGame = async () => {
     setIsStarting(true);
     try {
@@ -153,20 +191,10 @@ function LinguaSlide() {
       setTimeLeft(DIFFICULTY_TIME_LIMITS[difficulty]);
       setProgress(0);
       
-      // Update game state
+      // Update game state - this will trigger the timer useEffect
       updateGameState('playing');
       isInitializedRef.current = true;
       setIsInitialized(true);
-
-      timerRef.current = window.setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            endGame();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
 
       // Initialize speech recognition
       if ('webkitSpeechRecognition' in window) {
@@ -208,6 +236,9 @@ function LinguaSlide() {
         recognitionRef.current = recognition;
         recognition.start();
       }
+
+      setLastSpokenTimestamp(Date.now());
+      setShowInactiveWarning(false);
     } catch (error) {
       console.error('Error starting game:', error);
       updateGameState('ready');
@@ -223,18 +254,31 @@ function LinguaSlide() {
     isInitializedRef.current = false;
     setIsInitialized(false);
     
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
     
     setIsListening(false);
     
-    const completedWords = wordListRef.current.filter(w => w.completed && !w.skipped).length;
-    const totalAttempts = wordListRef.current.reduce((acc, word) => acc + (word.attempts || 0), 0);
+    // Mark all unlocked but uncompleted words as skipped
+    const updatedWordList = wordListRef.current.map(word => {
+      if (word.unlocked && !word.completed) {
+        return {
+          ...word,
+          completed: true,
+          skipped: true,
+          attempts: (word.attempts || 0) + 1
+        };
+      }
+      return word;
+    });
+    
+    // Update both ref and state
+    wordListRef.current = updatedWordList;
+    setWordList(updatedWordList);
+    
+    const completedWords = updatedWordList.filter(w => w.completed && !w.skipped).length;
+    const totalAttempts = updatedWordList.reduce((acc, word) => acc + (word.attempts || 0), 0);
     const timeSpent = DIFFICULTY_TIME_LIMITS[difficulty] - timeLeft;
     const accuracy = totalAttempts > 0 
       ? Math.round((completedWords / totalAttempts) * 100)
@@ -438,6 +482,9 @@ function LinguaSlide() {
         setTimeout(() => endGame(), 500);
       }
     }
+
+    setLastSpokenTimestamp(Date.now());
+    setShowInactiveWarning(false);
   };
 
   const toggleListening = () => {
@@ -454,6 +501,7 @@ function LinguaSlide() {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -519,6 +567,50 @@ function LinguaSlide() {
       failureAudio.current.pause();
     };
   }, []);
+
+  // Add this useEffect to monitor speaking inactivity
+  useEffect(() => {
+    if (gameState !== 'playing' || !isInitialized) return;
+
+    const inactivityCheck = setInterval(() => {
+      const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
+      
+      // Show warning at 5 seconds of inactivity
+      if (timeSinceLastSpoken >= 5000 && timeSinceLastSpoken < 10000) {
+        setShowInactiveWarning(true);
+      }
+      
+      // End game at 10 seconds of inactivity
+      if (timeSinceLastSpoken >= 10000) {
+        clearInterval(inactivityCheck);
+        endGameDueToInactivity();
+      }
+    }, 1000);
+
+    return () => clearInterval(inactivityCheck);
+  }, [gameState, isInitialized, lastSpokenTimestamp]);
+
+  // Add this function to handle inactivity game end
+  const endGameDueToInactivity = () => {
+    // Mark all unlocked words as skipped due to inactivity
+    const updatedWordList = wordListRef.current.map(word => {
+      if (word.unlocked) {
+        return {
+          ...word,
+          completed: true,
+          skipped: true,
+          attempts: 1,
+          inactivitySkip: true // Add this flag to indicate inactivity skip
+        };
+      }
+      return word;
+    });
+    
+    wordListRef.current = updatedWordList;
+    setWordList(updatedWordList);
+    
+    endGame();
+  };
 
   if (gameState === 'ready') {
     return (
@@ -602,6 +694,7 @@ function LinguaSlide() {
 
   if (gameState === 'finished' && gameResult) {
     const hasWordsToReview = wordList.some(w => w.skipped || w.hadIncorrectAttempt);
+    const hasInactivitySkip = wordList.some(w => w.inactivitySkip);
 
     return (
       <Box sx={{ 
@@ -768,6 +861,17 @@ function LinguaSlide() {
           <RefreshIcon sx={{ fontSize: '1.2rem' }} />
           Try Again
         </Button>
+
+        {hasInactivitySkip ? (
+          <Box sx={{ textAlign: 'center', py: 3 }}>
+            <Typography variant="h5" color="error" gutterBottom>
+              Game Ended Due to Inactivity
+            </Typography>
+            <Typography color="text.secondary">
+              Remember to speak clearly into your microphone when practicing pronunciation.
+            </Typography>
+          </Box>
+        ) : null}
       </Box>
     );
   }
@@ -1020,6 +1124,21 @@ function LinguaSlide() {
           <CloseIcon />
         </IconButton>
       </Box>
+
+      <Snackbar
+        open={showInactiveWarning}
+        autoHideDuration={5000}
+        onClose={() => setShowInactiveWarning(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          severity="warning" 
+          onClose={() => setShowInactiveWarning(false)}
+          sx={{ width: '100%' }}
+        >
+          Please start speaking! The game will end in a few seconds if no speech is detected.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
