@@ -814,11 +814,11 @@ function LinguaSlide() {
               minHeight: 'fit-content'
             }}>
               <StarIcon sx={{ 
-                fontSize: 64, 
+                fontSize: 96, 
                 color: 'primary.main',
                 animation: 'glow 2s ease-in-out infinite alternate'
               }} />
-              <Typography variant="h4" sx={{ color: 'text.primary' }}>
+              <Typography variant="h5" sx={{ color: 'text.primary' }}>
                 Perfect Pronunciation!
               </Typography>
               <Typography sx={{ 
