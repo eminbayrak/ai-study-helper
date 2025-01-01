@@ -146,21 +146,12 @@ class OpenRouterService:
 
     async def generate_word_sets(self, prompt: str) -> Dict[str, List[str]]:
         try:
-            # Update the prompt to specifically request 10 words per category
-            prompt = """Generate exactly 10 words for each category:
-            1. Easy: 10 common everyday words (1-2 syllables)
-            2. Medium: 10 moderately difficult words (2-3 syllables)
-            3. Hard: 10 advanced vocabulary words (3+ syllables)
-            
-            Format the response as a JSON object with three arrays: easy, medium, and hard.
-            Each array must contain exactly 10 words.
-            Do not include definitions or explanations."""
-
+            # Remove the hardcoded prompt and use the one passed from word_generation.py
             payload = {
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7,
-                "max_tokens": 300,  # Increased token limit for more words
+                "temperature": 0.9,  # Increased for more randomness
+                "max_tokens": 300,
                 "stream": False
             }
 
@@ -185,22 +176,13 @@ class OpenRouterService:
                     except json.JSONDecodeError:
                         word_sets = self._parse_word_response(content)
                     
-                    # Ensure exactly 10 words per category
-                    default_words = {
-                        "easy": ["cat", "dog", "book", "tree", "house", "ball", "car", "bird", "fish", "door"],
-                        "medium": ["rabbit", "pencil", "window", "garden", "morning", "teacher", "monkey", "chicken", "basket", "bottle"],
-                        "hard": ["vocabulary", "incredible", "mysterious", "fascinating", "determination", "extraordinary", "sophisticated", "revolutionary", "philosophical", "magnificent"]
-                    }
-
-                    # Ensure each category has exactly 10 words
+                    # Validate word count but don't use default words
                     for category in ["easy", "medium", "hard"]:
                         current_words = word_sets.get(category, [])
-                        # If we have more than 10 words, take the first 10
                         if len(current_words) > 10:
                             word_sets[category] = current_words[:10]
-                        # If we have less than 10 words, fill with defaults
                         elif len(current_words) < 10:
-                            word_sets[category] = current_words + default_words[category][len(current_words):10]
+                            raise Exception(f"Not enough words generated for {category} category")
 
                     return word_sets
 
