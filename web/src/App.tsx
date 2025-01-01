@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import Home from './pages/Home';
 import LinguaSlide from './pages/LinguaSlide';
 import { getTheme } from './theme';
 import { SpeedInsights } from '@vercel/speed-insights/react';
