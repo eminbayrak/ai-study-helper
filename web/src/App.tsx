@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import LinguaSlide from './pages/LinguaSlide';
 import { getTheme } from './theme';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -26,6 +27,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
+        <SpeedInsights />
         <Box sx={{ display: 'flex' }}>
           <Navbar onMenuClick={toggleSidebar} />
           <Sidebar open={sidebarOpen} onClose={toggleSidebar} />
@@ -40,7 +42,7 @@ function App() {
             }}
           >
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<LinguaSlide />} />
               <Route path="/linguaslide" element={<LinguaSlide />} />
             </Routes>
           </Box>
