@@ -615,19 +615,26 @@ function LinguaSlide() {
   if (gameState === 'ready') {
     return (
       <Box sx={{ 
-        maxWidth: 800,
+        maxWidth: {
+          xs: '95%',
+          sm: 600,
+          md: 800
+        },
         mx: 'auto', 
-        p: 3,
+        p: { xs: 2, sm: 3 },
         minHeight: 'fit-content',
         bgcolor: 'background.default',
         color: 'text.primary',
       }}>
-        <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4 }}>
+        <Typography variant="h4" gutterBottom align="center" sx={{ 
+          mb: { xs: 2, sm: 4 },
+          fontSize: { xs: '1.8rem', sm: '2.125rem' }
+        }}>
           Lingua Slide
         </Typography>
 
         <Card sx={{ 
-          p: 4,
+          p: { xs: 2, sm: 4 },
           bgcolor: 'background.paper',
           borderRadius: 2,
           border: 1,
@@ -878,25 +885,32 @@ function LinguaSlide() {
 
   return (
     <Box sx={{ 
-      maxWidth: 800,
+      maxWidth: {
+        xs: '95%',
+        sm: 600,
+        md: 800
+      },
       mx: 'auto', 
-      p: 3,
+      p: { xs: 2, sm: 3 },
       minHeight: 'fit-content',
       bgcolor: 'background.default',
       color: 'text.primary',
     }}>
-      <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4 }}>
+      <Typography variant="h4" gutterBottom align="center" sx={{ 
+        mb: { xs: 2, sm: 4 },
+        fontSize: { xs: '1.8rem', sm: '2.125rem' }
+      }}>
         Lingua Slide
       </Typography>
 
       <Card sx={{ 
-        p: 3,
+        p: { xs: 2, sm: 3 },
         bgcolor: 'background.paper',
         borderRadius: 2,
         border: 1,
         borderColor: 'divider',
         boxShadow: 'none',
-        mb: 8
+        mb: { xs: 6, sm: 8 }
       }}>
         <Stack spacing={3}>
           <Box>
@@ -1047,22 +1061,22 @@ function LinguaSlide() {
           bottom: 0,
           left: 0,
           right: 0,
-          py: 2,
-          px: 3,
+          py: { xs: 1.5, sm: 2 },
+          px: { xs: 2, sm: 3 },
           bgcolor: 'background.paper',
           borderTop: 1,
           borderColor: 'divider',
           display: 'flex',
           justifyContent: 'center',
-          gap: 2,
+          gap: { xs: 1, sm: 2 },
           zIndex: 1000,
           boxShadow: 'none'
         }}
       >
         <IconButton
           sx={{ 
-            width: 56,
-            height: 56,
+            width: { xs: 48, sm: 56 },
+            height: { xs: 48, sm: 56 },
             bgcolor: isListening ? 'secondary.main' : '#4CAF50',
             color: 'white',
             '&:hover': {
@@ -1078,8 +1092,8 @@ function LinguaSlide() {
           onClick={handleSkip}
           disabled={gameState !== 'playing' || !isInitialized}
           sx={{ 
-            width: 48, 
-            height: 48,
+            width: { xs: 48, sm: 56 },
+            height: { xs: 48, sm: 56 },
             backgroundColor: 'primary.main',
             color: 'white',
             '&:hover': {
@@ -1097,8 +1111,8 @@ function LinguaSlide() {
         <IconButton 
           onClick={fetchWords}
           sx={{ 
-            width: 48, 
-            height: 48,
+            width: { xs: 48, sm: 56 },
+            height: { xs: 48, sm: 56 },
             backgroundColor: 'primary.main',
             color: 'white',
             '&:hover': {
@@ -1112,8 +1126,8 @@ function LinguaSlide() {
         <IconButton 
           onClick={handleClose}
           sx={{ 
-            width: 48, 
-            height: 48,
+            width: { xs: 48, sm: 56 },
+            height: { xs: 48, sm: 56 },
             backgroundColor: 'error.main',
             color: 'white',
             '&:hover': {
