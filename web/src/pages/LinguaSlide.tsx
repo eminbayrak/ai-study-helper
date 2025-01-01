@@ -63,6 +63,8 @@ const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
   hard: 75,
 };
 
+import profanity from 'leo-profanity';
+
 function LinguaSlide() {
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [isListening, setIsListening] = useState(false);
@@ -75,13 +77,10 @@ function LinguaSlide() {
   const [isStarting, setIsStarting] = useState(false);
   const timerRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
-  const [lastSpokenWord, setLastSpokenWord] = useState('');
-  const [isInitialized, setIsInitialized] = useState(false);
-  const successAudio = useRef(new Audio(successSound));
-  const failureAudio = useRef(new Audio(failureSound));
   const [lastSpokenTimestamp, setLastSpokenTimestamp] = useState<number>(Date.now());
   const [showInactiveWarning, setShowInactiveWarning] = useState(false);
   const [hasSpokenOnce, setHasSpokenOnce] = useState(false);
+  const [lastSpokenWord, setLastSpokenWord] = useState('');
 
   // Add gameStateRef to track current state in callbacks
   const gameStateRef = useRef<GameState>('ready');
@@ -95,6 +94,10 @@ function LinguaSlide() {
   // Add refs to track state
   const isInitializedRef = useRef(false);
   const wordListRef = useRef<WordStatus[]>([]);
+
+  // Add these refs back near the top with other refs
+  const successAudio = useRef(new Audio(successSound));
+  const failureAudio = useRef(new Audio(failureSound));
 
   // Update fetchWords to use refs
   const fetchWords = async () => {
@@ -195,7 +198,6 @@ function LinguaSlide() {
       setProgress(0);
       updateGameState('playing');
       isInitializedRef.current = true;
-      setIsInitialized(true);
       setLastSpokenTimestamp(Date.now());
       setShowInactiveWarning(false);
 
@@ -225,6 +227,12 @@ function LinguaSlide() {
 
         recognition.onresult = (event: any) => {
           const text = event.results[event.results.length - 1][0].transcript;
+          if (profanity.check(text)) {
+            console.log('Speech recognition result: [inappropriate word filtered]');
+            failureAudio.current.currentTime = 0;
+            failureAudio.current.play();
+            return;
+          }
           console.log('Speech recognition result:', text);
           if (gameStateRef.current === 'playing' && isInitializedRef.current) {
             setLastSpokenWord(text.toLowerCase().trim());
@@ -240,7 +248,6 @@ function LinguaSlide() {
       console.error('Error starting game:', error);
       updateGameState('ready');
       isInitializedRef.current = false;
-      setIsInitialized(false);
     } finally {
       setIsStarting(false);
     }
@@ -249,7 +256,6 @@ function LinguaSlide() {
   const endGame = () => {
     updateGameState('finished');
     isInitializedRef.current = false;
-    setIsInitialized(false);
     
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -414,8 +420,20 @@ function LinguaSlide() {
     return false;
   };
 
-  // Update the checkPronunciation function with more detailed logging
+  // Add this helper function
+  const containsInappropriateWords = (text: string): boolean => {
+    return profanity.check(text);
+  };
+
+  // Modify the checkPronunciation function
   const checkPronunciation = (spokenText: string) => {
+    // Add this check at the start
+    if (containsInappropriateWords(spokenText)) {
+      failureAudio.current.currentTime = 0;
+      failureAudio.current.play();
+      return;
+    }
+
     setHasSpokenOnce(true);
     
     console.log('Checking pronunciation:', { 
@@ -516,7 +534,7 @@ function LinguaSlide() {
   };
 
   const handleSkip = () => {
-    if (gameState !== 'playing' || !isInitialized) return;
+    if (gameState !== 'playing' || !isInitializedRef.current) return;
     
     const currentWord = wordListRef.current.find(w => w.unlocked && !w.completed);
     if (!currentWord) return;
@@ -557,7 +575,6 @@ function LinguaSlide() {
     }
     updateGameState('ready');
     isInitializedRef.current = false;
-    setIsInitialized(false);
   };
 
   // Add cleanup for audio
@@ -570,7 +587,7 @@ function LinguaSlide() {
 
   // Inactivity monitor
   useEffect(() => {
-    if (gameState !== 'playing' || !isInitialized || isLoading || hasSpokenOnce) return;
+    if (gameState !== 'playing' || !isInitializedRef.current || isLoading || hasSpokenOnce) return;
 
     const inactivityCheck = setInterval(() => {
       const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
@@ -588,7 +605,7 @@ function LinguaSlide() {
     }, 1000);
 
     return () => clearInterval(inactivityCheck);
-  }, [gameState, isInitialized, lastSpokenTimestamp, isLoading, hasSpokenOnce]); // Add hasSpokenOnce dependency
+  }, [gameState, isInitializedRef.current, lastSpokenTimestamp, isLoading, hasSpokenOnce]); // Add hasSpokenOnce dependency
 
   // Add this function to handle inactivity game end
   const endGameDueToInactivity = () => {
@@ -611,6 +628,15 @@ function LinguaSlide() {
     
     endGame();
   };
+
+  // Add this useEffect near other useEffect hooks
+  useEffect(() => {
+    // Initialize English dictionary
+    profanity.loadDictionary('en');
+    
+    // You can add custom words to filter if needed
+    profanity.add(['inappropriate', 'words', 'here']);
+  }, []);
 
   if (gameState === 'ready') {
     return (
@@ -1090,7 +1116,7 @@ function LinguaSlide() {
 
         <IconButton 
           onClick={handleSkip}
-          disabled={gameState !== 'playing' || !isInitialized}
+          disabled={gameState !== 'playing' || !isInitializedRef.current}
           sx={{ 
             width: { xs: 48, sm: 56 },
             height: { xs: 48, sm: 56 },
@@ -1151,6 +1177,10 @@ function LinguaSlide() {
           Please start speaking! The game will end in a few seconds if no speech is detected.
         </Alert>
       </Snackbar>
+
+      <Typography variant="body2" color="text.secondary">
+        Last spoken: {lastSpokenWord || 'Nothing yet'}
+      </Typography>
     </Box>
   );
 }
