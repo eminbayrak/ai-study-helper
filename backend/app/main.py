@@ -26,7 +26,7 @@ try:
     # Include routers with their new names
     app.include_router(text_router, prefix="/api", tags=["text"])
     app.include_router(image_router, prefix="/api", tags=["image"])
-    app.include_router(word_router, prefix="/api", tags=["words"])
+    app.include_router(word_router, prefix="/api/words", tags=["words"])
 except Exception as e:
     print(f"Error importing routes: {str(e)}", file=sys.stderr)
     print(f"Current directory: {os.getcwd()}", file=sys.stderr)
@@ -42,3 +42,20 @@ def health_check():
 @app.get("/")
 async def root():
     return {"status": "healthy", "message": "AI Study Helper API is running"} 
+
+@app.get("/debug/routes")
+async def debug_routes():
+    routes = []
+    for route in app.routes:
+        routes.append(str(route))
+    return {"routes": routes}
+
+@app.get("/api/test")
+async def test():
+    return {"message": "Test endpoint working"}
+
+if __name__ == "__main__":
+    import uvicorn
+    # Use PORT from environment variable (for Render) or default to 8000
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port) 

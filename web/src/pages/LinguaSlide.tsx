@@ -1114,6 +1114,18 @@ function LinguaSlide() {
           </Stack>
         </Card>
 
+        <Typography 
+          variant="body2" 
+          color="text.secondary"
+          sx={{ 
+            textAlign: 'center',
+            mt: 2,
+            mb: { xs: 8, sm: 10 } // Add margin bottom to avoid overlap with fixed buttons
+          }}
+        >
+          Last spoken: {lastSpokenWord || 'Nothing yet'}
+        </Typography>
+
         <Box
           sx={{
             position: 'fixed',
