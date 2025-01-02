@@ -19,27 +19,13 @@ RUN useradd -m -u 1000 edulingo
 WORKDIR /app
 RUN chown edulingo:edulingo /app
 
+# Install Python packages globally before switching to non-root user
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install python-dotenv
+
 # Switch to non-root user
 USER edulingo
 
-# Create and activate virtual environment
-RUN python -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
-
-# Copy requirements first (as edulingo)
-COPY --chown=edulingo:edulingo requirements.txt .
-
-# Install Python dependencies in virtual environment
-RUN pip install --no-cache-dir -r requirements.txt
-
 # Copy the rest of the application
-COPY --chown=edulingo:edulingo . .
-
-# Add debug commands
-RUN echo "Directory structure:" && \
-    ls -R /app && \
-    echo "Python path:" && \
-    python -c "import sys; print('\n'.join(sys.path))"
-
-# Command to run the application
-CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT 
+COPY --chown=edulingo:edulingo . . 

@@ -18,6 +18,7 @@ async def get_random_words():
         Make sure each array has exactly 10 words. Words should be appropriate for language learning."""
         
         word_sets = await openrouter_service.generate_word_sets(prompt)
+        print(f"OpenRouter API Response: {word_sets}")  # Debug print
         
         return {
             "status": "success",
@@ -25,6 +26,7 @@ async def get_random_words():
         }
         
     except Exception as e:
+        print(f"Error in get_random_words: {str(e)}")  # Debug print
         raise HTTPException(
             status_code=500,
             detail=f"Error generating random words: {str(e)}"
