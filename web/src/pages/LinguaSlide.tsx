@@ -64,6 +64,7 @@ const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
 };
 
 import profanity from 'leo-profanity';
+import wordData from '../data/words.json';
 
 function LinguaSlide() {
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
@@ -83,6 +84,7 @@ function LinguaSlide() {
   const [lastSpokenWord, setLastSpokenWord] = useState('');
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Add gameStateRef to track current state in callbacks
   const gameStateRef = useRef<GameState>('ready');
@@ -105,15 +107,24 @@ function LinguaSlide() {
   const fetchWords = async () => {
     try {
       setIsLoading(true);
-      setApiError(null); // Clear any previous errors
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/words/random`);
+      setApiError(null);
+
+      // Get all words for the current difficulty
+      const allWords = wordData[difficulty];
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch words');
+      // Randomly select 10 words
+      const selectedWords = [];
+      const usedIndexes = new Set();
+      
+      while (selectedWords.length < 10 && usedIndexes.size < allWords.length) {
+        const randomIndex = Math.floor(Math.random() * allWords.length);
+        if (!usedIndexes.has(randomIndex)) {
+          selectedWords.push(allWords[randomIndex]);
+          usedIndexes.add(randomIndex);
+        }
       }
 
-      const result = await response.json();
-      const initialWords = result.data[difficulty].map((word: string, index: number) => ({
+      const initialWords = selectedWords.map((word, index) => ({
         word,
         phonetic: word.toLowerCase()
           .replace(/([aeiou])/g, '$1·')
@@ -122,20 +133,23 @@ function LinguaSlide() {
           .replace(/‧$/,''),
         completed: false,
         unlocked: index === 0,
-        order: index
+        order: index,
+        attempts: 0,
+        hadIncorrectAttempt: false,
+        currentAttemptIncorrect: false
       }));
       
       wordListRef.current = initialWords;
       setWordList(initialWords);
       setProgress(0);
+      return true;
     } catch (error) {
-      console.error('Error fetching words:', error);
-      setApiError('Unable to connect to the server. Please check your internet connection and try again.');
+      console.error('Error loading words:', error);
+      setApiError('Unable to load words. Please try again.');
       return false;
     } finally {
       setIsLoading(false);
     }
-    return true;
   };
 
   useEffect(() => {
@@ -189,6 +203,8 @@ function LinguaSlide() {
   const startGame = async () => {
     setIsStarting(true);
     setHasSpokenOnce(false);
+    setLastSpokenWord('');
+    
     try {
       // Reset states
       isInitializedRef.current = false;
@@ -211,38 +227,110 @@ function LinguaSlide() {
         if ('webkitSpeechRecognition' in window) {
           const recognition = new (window as any).webkitSpeechRecognition();
           recognition.continuous = true;
-          recognition.interimResults = false;
+          recognition.interimResults = true;
+          recognition.maxAlternatives = 1;
           recognition.lang = 'en-US';
+
+          // Reduce the processing delay
+          const processDelay = 100;
 
           recognition.onstart = () => {
             setIsListening(true);
+            console.log('Speech recognition started');
           };
 
           recognition.onend = () => {
             setIsListening(false);
+            console.log('Speech recognition ended');
             if (gameStateRef.current === 'playing' && isInitializedRef.current) {
               try {
                 recognition.start();
               } catch (error) {
+                console.error('Error restarting recognition:', error);
+                setTimeout(() => {
+                  try {
+                    recognition.start();
+                  } catch (e) {
+                    console.error('Failed to restart recognition:', e);
+                  }
+                }, 100);
               }
             }
           };
 
-          recognition.onresult = (event: any) => {
-            const text = event.results[event.results.length - 1][0].transcript;
-            if (profanity.check(text)) {
-              failureAudio.current.currentTime = 0;
-              failureAudio.current.play();
-              return;
-            }
+          recognition.onerror = (event: any) => {
+            console.error('Recognition error:', event.error);
             if (gameStateRef.current === 'playing' && isInitializedRef.current) {
-              setLastSpokenWord(text.toLowerCase().trim());
-              checkPronunciation(text);
+              try {
+                recognition.stop();
+                setTimeout(() => recognition.start(), 100);
+              } catch (error) {
+                console.error('Error restarting after error:', error);
+              }
             }
           };
 
+          let lastProcessedResult = '';
+          let processingTimeout: NodeJS.Timeout | null = null;
+
+          recognition.onresult = (event: any) => {
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const result = event.results[i];
+              if (result.isFinal) {
+                const transcript = result[0].transcript;
+                if (profanity.check(transcript)) {
+                  failureAudio.current.currentTime = 0;
+                  failureAudio.current.play();
+                  continue;
+                }
+                
+                if (gameStateRef.current === 'playing' && isInitializedRef.current) {
+                  const spokenText = transcript.toLowerCase().trim();
+                  
+                  // Prevent processing the same word multiple times
+                  if (spokenText === lastProcessedResult) {
+                    continue;
+                  }
+                  
+                  lastProcessedResult = spokenText;
+                  console.log('Spoken word:', spokenText);
+                  setLastSpokenWord(spokenText);
+                  
+                  // Clear any existing timeout
+                  if (processingTimeout) {
+                    clearTimeout(processingTimeout);
+                  }
+                  
+                  // Process after a short delay
+                  processingTimeout = setTimeout(() => {
+                    if (!isProcessing) {
+                      setIsProcessing(true);
+                      checkPronunciation(transcript);
+                      setIsProcessing(false);
+                    }
+                  }, processDelay);
+                }
+              }
+            }
+          };
+
+          // Start recognition immediately
+          try {
+            recognition.start();
+            console.log('Recognition started in try block');
+          } catch (error) {
+            console.error('Error starting recognition:', error);
+            setTimeout(() => {
+              try {
+                recognition.start();
+                console.log('Recognition started in catch block');
+              } catch (e) {
+                console.error('Failed to start recognition in catch block:', e);
+              }
+            }, 100);
+          }
+
           recognitionRef.current = recognition;
-          recognition.start();
         }
       } else {
         updateGameState('ready');
@@ -325,9 +413,11 @@ function LinguaSlide() {
         'nine': ['9', 'nighn'],
         'ten': ['10', 'tenn'],
         'zero': ['0', 'oh'],
+        'and': ['end', 'an', 'ant'],
+        'ant': ['and', 'end'],
       
         // Common homophones
-        'red': ['read', 'red'],
+        'red': ['read', 'red', 'bread'],
         'dog': ['doe', 'talk', 'dough', 'dock'],
         'read': ['red', 'reed', 'reeded'],
         'big': ['bigh', 'beg'],
@@ -361,7 +451,7 @@ function LinguaSlide() {
         'mail': ['male', 'maile'],
         'rain': ['reign', 'rein'],
         'raise': ['rays', 'raze'],
-        'run': ['ron', 'rum'],
+        'run': ['ron', 'rum', 'wrong'],
         'role': ['roll', 'roal'],
         'sale': ['sail', 'sel'],
         'scene': ['seen', 'seene'],
@@ -374,6 +464,7 @@ function LinguaSlide() {
         'toe': ['tow'],
         'weak': ['week', 'weake'],
         'which': ['witch', 'wich'],
+        'farm': ['far', 'farn'],
       
         // Similar sounding words
         'accept': ['except'],
@@ -405,6 +496,9 @@ function LinguaSlide() {
         'knows': ['nose'],
         'its': ["it's"],
         'your': ["you're", 'yore'],
+        'move': ['moove', 'moon'],
+        'moon': ['moove', 'move'],
+        
       };
       
 
@@ -423,8 +517,8 @@ function LinguaSlide() {
 
   // Modify the checkPronunciation function
   const checkPronunciation = (spokenText: string) => {
-    // Add this check at the start
     if (containsInappropriateWords(spokenText)) {
+      console.log('Inappropriate word detected');
       failureAudio.current.currentTime = 0;
       failureAudio.current.play();
       return;
@@ -444,13 +538,22 @@ function LinguaSlide() {
     const targetLower = currentWord.word.toLowerCase().trim();
     const isCorrect = spokenLower === targetLower || isSimilarPronunciation(spokenLower, targetLower);
 
-    // Play appropriate sound
-    if (isCorrect) {
-      successAudio.current.currentTime = 0;
-      successAudio.current.play();
-    } else {
-      failureAudio.current.currentTime = 0;
-      failureAudio.current.play();
+    console.log('Speech check:', {
+      spoken: spokenLower,
+      target: targetLower,
+      isCorrect,
+      attempts: (currentWord.attempts || 0) + 1
+    });
+
+    // Only play sounds if the word hasn't been completed
+    if (!currentWord.completed) {
+      if (isCorrect) {
+        successAudio.current.currentTime = 0;
+        successAudio.current.play();
+      } else {
+        failureAudio.current.currentTime = 0;
+        failureAudio.current.play();
+      }
     }
 
     // Always update the word list with the attempt
@@ -557,6 +660,7 @@ function LinguaSlide() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
+    setLastSpokenWord('');
     updateGameState('ready');
     isInitializedRef.current = false;
   };
@@ -1076,18 +1180,6 @@ function LinguaSlide() {
                                 ({item.phonetic})
                               </Typography>
                             </Box>
-                            {!item.completed && item.attempts && item.attempts > 2 && item.spokenWord && (
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                  color: 'error.main',
-                                  fontStyle: 'italic',
-                                  fontSize: '0.85rem'
-                                }}
-                              >
-                                you said: {item.spokenWord}
-                              </Typography>
-                            )}
                           </Box>
                           {item.completed && (
                             item.skipped ? (
@@ -1112,18 +1204,6 @@ function LinguaSlide() {
             )}
           </Stack>
         </Card>
-
-        <Typography 
-          variant="body2" 
-          color="text.secondary"
-          sx={{ 
-            textAlign: 'center',
-            mt: 2,
-            mb: { xs: 8, sm: 10 } // Add margin bottom to avoid overlap with fixed buttons
-          }}
-        >
-          Last spoken: {lastSpokenWord || 'Nothing yet'}
-        </Typography>
 
         <Box
           sx={{
