@@ -82,7 +82,6 @@ function LinguaSlide() {
   const [lastSpokenTimestamp, setLastSpokenTimestamp] = useState<number>(Date.now());
   const [showInactiveWarning, setShowInactiveWarning] = useState(false);
   const [hasSpokenOnce, setHasSpokenOnce] = useState(false);
-  const [lastSpokenWord, setLastSpokenWord] = useState('');
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -204,7 +203,6 @@ function LinguaSlide() {
   const startGame = async () => {
     setIsStarting(true);
     setHasSpokenOnce(false);
-    setLastSpokenWord('');
     
     try {
       // Reset states
@@ -295,7 +293,6 @@ function LinguaSlide() {
                   
                   lastProcessedResult = spokenText;
                   console.log('Spoken word:', spokenText);
-                  setLastSpokenWord(spokenText);
                   
                   // Clear any existing timeout
                   if (processingTimeout) {
@@ -664,7 +661,6 @@ function LinguaSlide() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    setLastSpokenWord('');
     updateGameState('ready');
     isInitializedRef.current = false;
   };
