@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-api/
 .env
 .venv
 env/
@@ -15,6 +14,14 @@ venv.bak/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Virtual Environment
+**/bin/
+**/lib/
+**/lib64
+**/include/
+**/share/
+**/pyvenv.cfg
 
 # IDE
 .idea/

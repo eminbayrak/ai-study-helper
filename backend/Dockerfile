@@ -35,5 +35,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY --chown=edulingo:edulingo . .
 
+# Add debug commands
+RUN echo "Directory structure:" && \
+    ls -R /app && \
+    echo "Python path:" && \
+    python -c "import sys; print('\n'.join(sys.path))"
+
 # Command to run the application
 CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT 
