@@ -27,4 +27,8 @@ app.include_router(word_generation.router, prefix="/api", tags=["words"])
 # Add a health check endpoint
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
+
+@app.get("/")
+async def root():
+    return {"status": "healthy", "message": "AI Study Helper API is running"} 

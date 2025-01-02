@@ -6,36 +6,23 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     tesseract-ocr \
+    tesseract-ocr-eng \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
-RUN useradd -m -u 1000 appuser
-
-# Create and set working directory ownership
-RUN mkdir /app && chown appuser:appuser /app
+# Create and set working directory
 WORKDIR /app
 
-# Switch to non-root user
-USER appuser
+# Copy requirements first for better caching
+COPY requirements.txt .
 
-# Create and activate virtual environment
-RUN python -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
-
-# Copy requirements first (as appuser)
-COPY --chown=appuser:appuser requirements.txt .
-
-# Install Python dependencies in virtual environment
-RUN pip install --no-cache-dir -r requirements.txt --upgrade pip
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
-COPY --chown=appuser:appuser . .
-
-# Set environment variable for port
-ENV PORT=8080
-
-# Expose the port
-EXPOSE 8080
+COPY . .
 
 # Command to run the application
-CMD [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1" ] 
+CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT 
