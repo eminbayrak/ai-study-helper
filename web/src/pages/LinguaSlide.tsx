@@ -67,6 +67,15 @@ const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
 import profanity from 'leo-profanity';
 import wordData from '../data/words.json';
 
+// Add these helper functions at the top of your file
+const isMobileBrowser = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+const isSpeechRecognitionSupported = () => {
+  return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+};
+
 function LinguaSlide() {
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [isListening, setIsListening] = useState(false);
@@ -201,6 +210,11 @@ function LinguaSlide() {
   }, [gameState, isLoading]); // Add isLoading dependency
 
   const startGame = async () => {
+    if (isMobileBrowser() || !isSpeechRecognitionSupported()) {
+      setErrorToast('Speech recognition is not supported in this browser. Please use a desktop browser like Chrome.');
+      return;
+    }
+
     setIsStarting(true);
     setHasSpokenOnce(false);
     
@@ -745,118 +759,214 @@ function LinguaSlide() {
   }, [gameState, isLoading]);
 
   if (gameState === 'ready') {
+    const isUnsupported = isMobileBrowser() || !isSpeechRecognitionSupported();
+
     return (
-      <>
+      <Box sx={{ 
+        maxWidth: {
+          xs: '95%',
+          sm: 600,
+          md: 800
+        },
+        mx: 'auto', 
+        p: { xs: 2, sm: 3 },
+        minHeight: 'fit-content',
+        bgcolor: 'background.default',
+        color: 'text.primary',
+      }}>
         <Box sx={{ 
-          maxWidth: {
-            xs: '95%',
-            sm: 600,
-            md: 800
-          },
-          mx: 'auto', 
-          p: { xs: 2, sm: 3 },
-          minHeight: 'fit-content',
-          bgcolor: 'background.default',
-          color: 'text.primary',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+          mb: { xs: 2, sm: 4 },
         }}>
-          <Typography variant="h4" gutterBottom align="center" sx={{ 
-            mb: { xs: 2, sm: 4 },
-            fontSize: { xs: '1.8rem', sm: '2.125rem' }
-          }}>
+          <Typography 
+            variant="h4" 
+            align="center" 
+            sx={{ 
+              fontSize: { xs: '1.8rem', sm: '2.125rem' }
+            }}
+          >
             Lingua Slide
           </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: '0.7rem',
+              fontWeight: 'bold',
+              letterSpacing: '0.05em',
+              transform: 'translateY(-8px)'
+            }}
+          >
+            BETA
+          </Typography>
+        </Box>
 
-          <Card sx={{ 
-            p: { xs: 2, sm: 4 },
-            bgcolor: 'background.paper',
+        {isUnsupported ? (
+          <Card sx={{
+            p: 3,
+            bgcolor: 'rgba(226, 183, 20, 0.1)',
             borderRadius: 2,
-            border: 1,
-            borderColor: 'divider',
-            boxShadow: 'none'
+            mb: 3,
+            border: '1px solid',
+            borderColor: 'warning.main',
           }}>
-            <Stack spacing={6} alignItems="center">
-              <Typography variant="h6" color="text.secondary">
-                Select Difficulty
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'flex-start', 
+              gap: 2 
+            }}>
+              <Typography variant="h5" color="warning.main" sx={{ lineHeight: 1 }}>
+                📱
               </Typography>
-
-              <ToggleButtonGroup
-                value={difficulty}
-                exclusive
-                onChange={(_, newDifficulty) => newDifficulty && setDifficulty(newDifficulty)}
-                sx={{
-                  '& .MuiToggleButton-root': {
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1rem',
-                    borderColor: 'divider'
-                  }
-                }}
-              >
-                <ToggleButton value="easy">Easy</ToggleButton>
-                <ToggleButton value="medium">Medium</ToggleButton>
-                <ToggleButton value="hard">Hard</ToggleButton>
-              </ToggleButtonGroup>
-
-              <Box sx={{ 
-                bgcolor: 'rgba(226, 183, 20, 0.1)', 
-                p: 2, 
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'primary.main',
-                maxWidth: 400,
-                textAlign: 'center'
-              }}>
+              <Box>
                 <Typography 
-                  variant="subtitle1" 
-                  color="primary"
-                  sx={{ mb: 1, fontWeight: 500 }}
+                  variant="h6" 
+                  color="warning.main" 
+                  gutterBottom 
+                  sx={{ fontWeight: 500 }}
                 >
-                  📢 For Best Results
+                  Mobile Device Detected
                 </Typography>
                 <Typography 
                   variant="body2" 
                   color="text.secondary"
-                  sx={{ lineHeight: 1.6 }}
+                  sx={{ mb: 2 }}
                 >
-                  • Position your microphone close to your mouth (4-6 inches)<br />
-                  • Speak clearly and at a normal pace<br />
-                  • Minimize background noise<br />
-                  • Pronounce each word as naturally as possible
+                  Lingua Slide requires advanced speech recognition features that aren't fully supported on mobile browsers. For the best learning experience:
                 </Typography>
+                <Box 
+                  sx={{ 
+                    bgcolor: 'background.paper',
+                    p: 2,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography 
+                    variant="subtitle2" 
+                    color="primary"
+                    gutterBottom
+                  >
+                    💡 Recommended Setup:
+                  </Typography>
+                  <Box component="ul" sx={{ 
+                    m: 0, 
+                    pl: 2,
+                    '& li': { 
+                      mb: 1,
+                      color: 'text.secondary',
+                      fontSize: '0.875rem',
+                    }
+                  }}>
+                    <li>Use a desktop or laptop computer</li>
+                    <li>Chrome browser is recommended for best performance</li>
+                    <li>Connect a good quality microphone</li>
+                    <li>Find a quiet environment for accurate recognition</li>
+                  </Box>
+                </Box>
               </Box>
-
-              <IconButton
-                sx={{ 
-                  width: 100,
-                  height: 100,
-                  backgroundColor: 'primary.main',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    backgroundColor: 'primary.dark',
-                    transform: 'scale(1.05)'
-                  }
-                }}
-                onClick={startGame}
-                disabled={isStarting}
-              >
-                {isStarting ? (
-                  <CircularProgress color="inherit" size={32} />
-                ) : (
-                  <PlayArrowIcon sx={{ fontSize: 48, color: 'white' }} />
-                )}
-              </IconButton>
-
-              <Typography 
-                variant="body1" 
-                color="text.secondary"
-                align="center"
-                sx={{ maxWidth: 400 }}
-              >
-                Practice your pronunciation with {DIFFICULTY_TIME_LIMITS[difficulty]} seconds timer
-              </Typography>
-            </Stack>
+            </Box>
           </Card>
-        </Box>
+        ) : null}
+
+        <Card sx={{ 
+          p: { xs: 2, sm: 4 },
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          border: 1,
+          borderColor: 'divider',
+          boxShadow: 'none'
+        }}>
+          <Stack spacing={6} alignItems="center">
+            <Typography variant="h6" color="text.secondary">
+              Select Difficulty
+            </Typography>
+
+            <ToggleButtonGroup
+              value={difficulty}
+              exclusive
+              onChange={(_, newDifficulty) => newDifficulty && setDifficulty(newDifficulty)}
+              sx={{
+                '& .MuiToggleButton-root': {
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  borderColor: 'divider'
+                }
+              }}
+            >
+              <ToggleButton value="easy">Easy</ToggleButton>
+              <ToggleButton value="medium">Medium</ToggleButton>
+              <ToggleButton value="hard">Hard</ToggleButton>
+            </ToggleButtonGroup>
+
+            <Box sx={{ 
+              bgcolor: 'rgba(226, 183, 20, 0.1)', 
+              p: 2, 
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'primary.main',
+              maxWidth: 400,
+              textAlign: 'center'
+            }}>
+              <Typography 
+                variant="subtitle1" 
+                color="primary"
+                sx={{ mb: 1, fontWeight: 500 }}
+              >
+                📢 For Best Results
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ lineHeight: 1.6 }}
+              >
+                • Position your microphone close to your mouth (4-6 inches)<br />
+                • Speak clearly and at a normal pace<br />
+                • Minimize background noise<br />
+                • Pronounce each word as naturally as possible
+              </Typography>
+            </Box>
+
+            <IconButton
+              sx={{ 
+                width: 100,
+                height: 100,
+                backgroundColor: 'primary.main',
+                transition: 'transform 0.2s',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                  transform: 'scale(1.05)'
+                }
+              }}
+              onClick={startGame}
+              disabled={isStarting}
+            >
+              {isStarting ? (
+                <CircularProgress color="inherit" size={32} />
+              ) : (
+                <PlayArrowIcon sx={{ fontSize: 48, color: 'white' }} />
+              )}
+            </IconButton>
+
+            <Typography 
+              variant="body1" 
+              color="text.secondary"
+              align="center"
+              sx={{ maxWidth: 400 }}
+            >
+              Practice your pronunciation with {DIFFICULTY_TIME_LIMITS[difficulty]} seconds timer
+            </Typography>
+          </Stack>
+        </Card>
 
         <Snackbar
           open={!!apiError}
@@ -902,7 +1012,7 @@ function LinguaSlide() {
             {errorToast}
           </Alert>
         </Snackbar>
-      </>
+      </Box>
     );
   }
 
@@ -1104,12 +1214,39 @@ function LinguaSlide() {
         bgcolor: 'background.default',
         color: 'text.primary',
       }}>
-        <Typography variant="h4" gutterBottom align="center" sx={{ 
+        <Box sx={{ 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
           mb: { xs: 2, sm: 4 },
-          fontSize: { xs: '1.8rem', sm: '2.125rem' }
         }}>
-          Lingua Slide
-        </Typography>
+          <Typography 
+            variant="h4" 
+            align="center" 
+            sx={{ 
+              fontSize: { xs: '1.8rem', sm: '2.125rem' }
+            }}
+          >
+            Lingua Slide
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: '0.7rem',
+              fontWeight: 'bold',
+              letterSpacing: '0.05em',
+              transform: 'translateY(-8px)'
+            }}
+          >
+            BETA
+          </Typography>
+        </Box>
 
         <Box sx={{ mb: 3 }}>
           <Box sx={{ 
