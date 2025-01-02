@@ -112,9 +112,8 @@ function LinguaSlide() {
         throw new Error('Failed to fetch words');
       }
 
-      const data = await response.json();
-      
-      const initialWords = data[difficulty].map((word: string, index: number) => ({
+      const result = await response.json();
+      const initialWords = result.data[difficulty].map((word: string, index: number) => ({
         word,
         phonetic: word.toLowerCase()
           .replace(/([aeiou])/g, '$1·')
