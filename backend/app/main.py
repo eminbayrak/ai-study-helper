@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.settings import get_settings
+from app.api.routes.text_processing import router as text_router
+from app.api.routes.image_processing import router as image_router
+from app.api.routes.word_generation import router as word_router
 import os
 import sys
 
@@ -20,11 +23,10 @@ app.add_middleware(
 )
 
 try:
-    from app.api.routes import text_processing, image_processing, word_generation
-    # Include routers
-    app.include_router(text_processing.router, prefix="/api", tags=["text"])
-    app.include_router(image_processing.router, prefix="/api", tags=["image"])
-    app.include_router(word_generation.router, prefix="/api", tags=["words"])
+    # Include routers with their new names
+    app.include_router(text_router, prefix="/api", tags=["text"])
+    app.include_router(image_router, prefix="/api", tags=["image"])
+    app.include_router(word_router, prefix="/api", tags=["words"])
 except Exception as e:
     print(f"Error importing routes: {str(e)}", file=sys.stderr)
     print(f"Current directory: {os.getcwd()}", file=sys.stderr)
