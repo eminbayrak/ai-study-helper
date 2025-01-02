@@ -35,6 +35,7 @@ import failureSound from '../assets/sounds/failure.mp3';
 // Types
 type Difficulty = 'easy' | 'medium' | 'hard';
 type GameState = 'ready' | 'playing' | 'finished';
+type Timeout = ReturnType<typeof setTimeout>;
 
 interface WordStatus {
   word: string;
@@ -271,7 +272,7 @@ function LinguaSlide() {
           };
 
           let lastProcessedResult = '';
-          let processingTimeout: NodeJS.Timeout | null = null;
+          let processingTimeout: Timeout | null = null;
 
           recognition.onresult = (event: any) => {
             for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -583,6 +584,7 @@ function LinguaSlide() {
 
     if (isCorrect) {
       setProgress((currentWord.order + 1) * 10);
+      setTimeout(() => scrollToActiveWord(currentWord.order + 1), 100);
       if (updatedWordList.every(w => w.completed)) {
         setTimeout(() => endGame(), 500);
       }
@@ -650,6 +652,8 @@ function LinguaSlide() {
     if (updatedWordList.every(w => w.completed)) {
       setTimeout(() => endGame(), 500);
     }
+
+    setTimeout(() => scrollToActiveWord(currentWord.order + 1), 100);
   };
 
   // Update close button handler
@@ -725,6 +729,24 @@ function LinguaSlide() {
     // You can add custom words to filter if needed
     profanity.add(['inappropriate', 'words', 'here']);
   }, []);
+
+  // Add this function after your other imports
+  const scrollToActiveWord = (wordIndex: number) => {
+    const wordElement = document.getElementById(`word-${wordIndex}`);
+    if (wordElement) {
+      wordElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  };
+
+  // Add this useEffect to scroll to the first word when the game starts
+  useEffect(() => {
+    if (gameState === 'playing' && !isLoading) {
+      setTimeout(() => scrollToActiveWord(0), 100);
+    }
+  }, [gameState, isLoading]);
 
   if (gameState === 'ready') {
     return (
@@ -1093,6 +1115,45 @@ function LinguaSlide() {
           Lingua Slide
         </Typography>
 
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2 
+          }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: timeLeft <= 10 ? 'error.main' : 'text.primary',
+                transition: 'color 0.3s',
+                fontFamily: 'Roboto Mono, monospace',
+              }}
+            >
+              Time Left: {timeLeft}s
+            </Typography>
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+            >
+              Progress: {progress}%
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={progress}
+            sx={{
+              height: 6,
+              borderRadius: 3,
+              bgcolor: 'rgba(255, 255, 255, 0.1)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: 'primary.main',
+                borderRadius: 3,
+              }
+            }}
+          />
+        </Box>
+
         <Card sx={{ 
           p: { xs: 2, sm: 3 },
           bgcolor: 'background.paper',
@@ -1100,136 +1161,113 @@ function LinguaSlide() {
           border: 1,
           borderColor: 'divider',
           boxShadow: 'none',
-          mb: { xs: 6, sm: 8 }
+          mb: { xs: 6, sm: 8 },
+          maxHeight: 'calc(100vh - 300px)',
+          overflow: 'auto',
+          scrollBehavior: 'smooth',
         }}>
-          <Stack spacing={3}>
-            <Box>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Time Left: {timeLeft}s
-              </Typography>
-              <LinearProgress 
-                variant="determinate" 
-                value={(progress / 100) * 100}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  '& .MuiLinearProgress-bar': {
-                    bgcolor: 'primary.main',
-                  }
-                }}
-              />
-            </Box>
-
-            {isLoading ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <CircularProgress />
-                <Typography sx={{ mt: 2 }}>Loading words...</Typography>
-              </Box>
-            ) : (
-              <Stack spacing={2}>
-                {wordList
-                  .sort((a, b) => (a.order || 0) - (b.order || 0))
-                  .map((item, index) => (
-                    <Card 
-                      key={item.order || index}
+          <Stack spacing={2} sx={{ position: 'relative' }}>
+            {wordList
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map((item, index) => (
+                <Card 
+                  key={item.order || index}
+                  id={`word-${index}`}
+                  sx={{ 
+                    bgcolor: (!item.completed && item.unlocked) 
+                      ? 'action.hover'
+                      : 'background.paper',
+                    opacity: item.unlocked ? 1 : 0.5,
+                    transition: 'all 0.3s',
+                    borderRadius: 2,
+                    border: '2px solid',
+                    borderColor: (!item.completed && item.unlocked)
+                      ? 'divider'
+                      : item.completed && !item.hadIncorrectAttempt && !item.skipped
+                        ? 'success.main'
+                        : 'warning.main',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: (!item.completed && item.unlocked)
+                        ? 'action.selected'
+                        : 'action.hover',
+                    }
+                  }}
+                >
+                  <CardContent sx={{ 
+                    p: 2,
+                    '&:last-child': { pb: 2 }
+                  }}>
+                    <Stack 
+                      direction="row" 
+                      spacing={1} 
+                      alignItems="center"
                       sx={{ 
-                        bgcolor: (!item.completed && item.unlocked) 
-                          ? 'action.hover'
-                          : 'background.paper',
-                        opacity: item.unlocked ? 1 : 0.5,
-                        transition: 'all 0.3s',
-                        borderRadius: 2,
-                        border: '2px solid',
-                        borderColor: (!item.completed && item.unlocked)
-                          ? 'divider'
-                          : item.completed && !item.hadIncorrectAttempt && !item.skipped
-                            ? 'success.main'
-                            : 'warning.main',
-                        boxShadow: 'none',
-                        '&:hover': {
-                          bgcolor: (!item.completed && item.unlocked)
-                            ? 'action.selected'
-                            : 'action.hover',
-                        }
+                        flexWrap: 'nowrap',
+                        minWidth: 0
                       }}
                     >
-                      <CardContent sx={{ 
-                        p: 2,
-                        '&:last-child': { pb: 2 }
+                      <IconButton 
+                        onClick={() => speak(item.word)}
+                        size="small"
+                      >
+                        <VolumeUpIcon />
+                      </IconButton>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        gap: 0.5,
+                        minWidth: 0,
+                        flex: 1
                       }}>
-                        <Stack 
-                          direction="row" 
-                          spacing={1} 
-                          alignItems="center"
-                          sx={{ 
-                            flexWrap: 'nowrap',
-                            minWidth: 0
-                          }}
-                        >
-                          <IconButton 
-                            onClick={() => speak(item.word)}
-                            size="small"
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1
+                        }}>
+                          <Typography 
+                            variant="h6" 
+                            sx={{ 
+                              flexShrink: 0,
+                              fontSize: '1.1rem'
+                            }}
                           >
-                            <VolumeUpIcon />
-                          </IconButton>
-                          <Box sx={{ 
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            gap: 0.5,
-                            minWidth: 0,
-                            flex: 1
-                          }}>
-                            <Box sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 1
-                            }}>
-                              <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                  flexShrink: 0,
-                                  fontSize: '1.1rem'
-                                }}
-                              >
-                                {item.word}
-                              </Typography>
-                              <Typography 
-                                variant="body2" 
-                                color="text.secondary"
-                                sx={{ 
-                                  flexShrink: 1,
-                                  minWidth: 0,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                ({item.phonetic})
-                              </Typography>
-                            </Box>
-                          </Box>
-                          {item.completed && (
-                            item.skipped ? (
-                              <CloseIcon 
-                                sx={{ 
-                                  flexShrink: 0,
-                                  color: 'error.main'
-                                }}
-                              />
-                            ) : (
-                              <CheckCircleIcon 
-                                color="success" 
-                                sx={{ flexShrink: 0 }}
-                              />
-                            )
-                          )}
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </Stack>
-            )}
+                            {item.word}
+                          </Typography>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ 
+                              flexShrink: 1,
+                              minWidth: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            ({item.phonetic})
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {item.completed && (
+                        item.skipped ? (
+                          <CloseIcon 
+                            sx={{ 
+                              flexShrink: 0,
+                              color: 'error.main'
+                            }}
+                          />
+                        ) : (
+                          <CheckCircleIcon 
+                            color="success" 
+                            sx={{ flexShrink: 0 }}
+                          />
+                        )
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))}
           </Stack>
         </Card>
 
