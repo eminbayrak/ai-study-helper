@@ -19,14 +19,13 @@ RUN useradd -m -u 1000 edulingo
 WORKDIR /app
 RUN chown edulingo:edulingo /app
 
+# Install Python packages globally before switching to non-root user
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install python-dotenv
+
 # Switch to non-root user
 USER edulingo
-
-# Copy requirements first (as edulingo)
-COPY --chown=edulingo:edulingo requirements.txt .
-
-# Install Python dependencies in virtual environment
-RUN pip install --no-cache-dir -r requirements.txt && pip install python-dotenv
 
 # Copy the rest of the application
 COPY --chown=edulingo:edulingo . . 

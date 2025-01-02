@@ -146,11 +146,10 @@ class OpenRouterService:
 
     async def generate_word_sets(self, prompt: str) -> Dict[str, List[str]]:
         try:
-            # Remove the hardcoded prompt and use the one passed from word_generation.py
             payload = {
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.9,  # Increased for more randomness
+                "temperature": 0.9,
                 "max_tokens": 300,
                 "stream": False
             }
@@ -162,13 +161,17 @@ class OpenRouterService:
                     json=payload
                 ) as response:
                     response_text = await response.text()
-                    
-                    if response.status != 200:
-                        raise Exception(f"OpenRouter API error: {response_text}")
-                    
                     data = json.loads(response_text)
-                    if not data.get('choices'):
-                        raise Exception("No choices in API response")
+                    
+                    # Check for error in response
+                    if 'error' in data:
+                        error_msg = data['error'].get('message', 'Unknown error')
+                        print(f"OpenRouter API error: {error_msg}")  # Log the detailed error
+                        raise Exception("Internal server error")
+                    
+                    if response.status != 200 or not data.get('choices'):
+                        print(f"No choices in response. Full response: {data}")
+                        raise Exception("Internal server error")
                     
                     content = data['choices'][0]['message']['content']
                     try:

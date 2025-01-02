@@ -10,5 +10,5 @@ services:
     environment:
       - PORT=8000
       - OPENROUTER_MODEL=gpt-3.5-turbo
-      # Add other environment variables as needed
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload 
