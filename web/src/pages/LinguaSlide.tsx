@@ -779,6 +779,34 @@ function LinguaSlide() {
                 <ToggleButton value="hard">Hard</ToggleButton>
               </ToggleButtonGroup>
 
+              <Box sx={{ 
+                bgcolor: 'rgba(226, 183, 20, 0.1)', 
+                p: 2, 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'primary.main',
+                maxWidth: 400,
+                textAlign: 'center'
+              }}>
+                <Typography 
+                  variant="subtitle1" 
+                  color="primary"
+                  sx={{ mb: 1, fontWeight: 500 }}
+                >
+                  📢 For Best Results
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ lineHeight: 1.6 }}
+                >
+                  • Position your microphone close to your mouth (4-6 inches)<br />
+                  • Speak clearly and at a normal pace<br />
+                  • Minimize background noise<br />
+                  • Pronounce each word as naturally as possible
+                </Typography>
+              </Box>
+
               <IconButton
                 sx={{ 
                   width: 100,
