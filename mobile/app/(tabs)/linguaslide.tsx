@@ -180,7 +180,7 @@ export default function LinguaSlideScreen() {
           Voice.start('en-US');
         }
       };
-      Voice.onSpeechError = (e) => {
+      Voice.onSpeechError = (e: { error: unknown }) => {
         console.error('Speech recognition error (mobile):', e);
       };
       Voice.onSpeechResults = (e: any) => {

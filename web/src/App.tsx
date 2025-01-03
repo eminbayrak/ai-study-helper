@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import LinguaSlide from './pages/LinguaSlide';
+import LingoSlide from './pages/LingoSlide';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CustomThemeProvider } from './contexts/ThemeContext';
 import { useTheme } from './contexts/ThemeContext';
@@ -18,8 +18,8 @@ function AppContent() {
       <main className="w-full h-full overflow-auto pt-12">
         <SpeedInsights />
         <Routes>
-          <Route path="/" element={<Navigate to="/linguaslide" replace />} />
-          <Route path="/linguaslide" element={<LinguaSlide />} />
+          <Route path="/lingoslide" element={<LingoSlide />} />
+          <Route path="/" element={<Navigate to="/lingoslide" replace />} />
         </Routes>
       </main>
       <Toaster />

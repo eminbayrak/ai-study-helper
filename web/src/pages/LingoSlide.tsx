@@ -7,7 +7,6 @@ declare global {
 
 import { useEffect, useState, useRef } from 'react';
 import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
 import {
   Mic,
@@ -19,19 +18,20 @@ import {
   Play,
   Star
 } from "lucide-react";
-import { Alert, AlertDescription } from "../components/ui/alert";
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "../components/ui/toggle-group";
-import { cn } from "../lib/utils";
 import { useTheme } from '../contexts/ThemeContext';
 import { Toaster } from "../components/ui/toaster";
 import { toast } from "../hooks/use-toast";
 
 // Assets
-const successSound = 'https://assets.mixkit.co/active_storage/sfx/2018/success-1-6297.wav';
-const failureSound = 'https://assets.mixkit.co/active_storage/sfx/2018/failure-drum-sound-effect-2-7184.wav';
+import successSoundFile from '../assets/sounds/success.mp3';
+import failureSoundFile from '../assets/sounds/failure.mp3';
+
+const successSound = successSoundFile;
+const failureSound = failureSoundFile;
 
 // Types
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -630,10 +630,10 @@ function LinguaSlide() {
         setIsListening(false);
       } else {
         if (!isRecognitionActiveRef.current) {
-          recognitionRef.current.start();
+        recognitionRef.current.start();
           isRecognitionActiveRef.current = true;
           setIsListening(true);
-        }
+      }
       }
     } catch (error) {
       console.error('Speech recognition error:', error);
@@ -676,7 +676,7 @@ function LinguaSlide() {
     return () => {
       if (recognitionRef.current) {
         try {
-          recognitionRef.current.stop();
+        recognitionRef.current.stop();
           isRecognitionActiveRef.current = false;
           setIsListening(false);
         } catch (error) {
@@ -727,15 +727,15 @@ function LinguaSlide() {
   // Update close button handler
   const handleClose = () => {
     try {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
         setIsListening(false);
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      updateGameState('ready');
-      isInitializedRef.current = false;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    updateGameState('ready');
+    isInitializedRef.current = false;
     } catch (error) {
       console.error('Error closing:', error);
     }
@@ -758,12 +758,12 @@ function LinguaSlide() {
     const inactivityCheck = setInterval(() => {
       const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
       
-      if (timeSinceLastSpoken >= 10000 && !hasShownWarning) {
+      if (timeSinceLastSpoken >= 20000 && !hasShownWarning) {
         setShowInactiveWarning(true);
         hasShownWarning = true;
         toast({
-          title: "Warning",
-          description: "Please start speaking to continue the game",
+          title: "Ready to Practice?",
+          description: "Try pronouncing the highlighted word to continue your session",
           variant: "destructive",
           className: "border-none",
           style: {
@@ -773,7 +773,7 @@ function LinguaSlide() {
         });
       }
       
-      if (timeSinceLastSpoken >= 20000) {
+      if (timeSinceLastSpoken >= 30000) {
         clearInterval(inactivityCheck);
         endGameDueToInactivity();
       }
@@ -1214,7 +1214,7 @@ function LinguaSlide() {
                               style={{
                                 color: currentTheme.colors.text
                               }}
-                              onClick={() => speak(word.word)}
+                          onClick={() => speak(word.word)}
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </Button>

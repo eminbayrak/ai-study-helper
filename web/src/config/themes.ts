@@ -5,6 +5,7 @@ export interface Theme {
     bg: string;
     main: string;
     sub: string;
+    card: string;
     text: string;
     error: string;
     success: string;
@@ -19,6 +20,7 @@ export const themes: Theme[] = [
       bg: '#323437',
       main: '#e2b714',
       sub: '#646669',
+      card: '#323437',
       text: '#d1d0c5',
       error: '#ca4754',
       success: '#4CAF50'
@@ -31,6 +33,7 @@ export const themes: Theme[] = [
       bg: '#282a36',
       main: '#bd93f9',
       sub: '#6272a4',
+      card: '#282a36',
       text: '#f8f8f2',
       error: '#ff5555',
       success: '#50fa7b'
@@ -43,6 +46,7 @@ export const themes: Theme[] = [
       bg: '#272822',
       main: '#f92672',
       sub: '#75715e',
+      card: '#272822',
       text: '#f8f8f2',
       error: '#f92672',
       success: '#a6e22e'
