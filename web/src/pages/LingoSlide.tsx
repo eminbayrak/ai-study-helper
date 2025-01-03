@@ -93,7 +93,6 @@ function LinguaSlide() {
   const timerRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
   const [lastSpokenTimestamp, setLastSpokenTimestamp] = useState<number>(Date.now());
-  const [showInactiveWarning, setShowInactiveWarning] = useState(false);
   const [hasSpokenOnce, setHasSpokenOnce] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -273,7 +272,6 @@ function LinguaSlide() {
         updateGameState('playing');
         isInitializedRef.current = true;
         setLastSpokenTimestamp(Date.now());
-        setShowInactiveWarning(false);
 
         // Initialize speech recognition
         if ('webkitSpeechRecognition' in window) {
@@ -533,7 +531,6 @@ function LinguaSlide() {
     }
 
     setLastSpokenTimestamp(Date.now());
-    setShowInactiveWarning(false);
   };
 
   // Update toggleListening function
@@ -674,9 +671,8 @@ function LinguaSlide() {
 
     const inactivityCheck = setInterval(() => {
       const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
-
+      
       if (timeSinceLastSpoken >= 20000 && !hasShownWarning) {
-        setShowInactiveWarning(true);
         hasShownWarning = true;
         toast({
           title: "Ready to Practice?",
@@ -689,7 +685,7 @@ function LinguaSlide() {
           },
         });
       }
-
+      
       if (timeSinceLastSpoken >= 30000) {
         clearInterval(inactivityCheck);
         endGameDueToInactivity();
@@ -772,11 +768,6 @@ function LinguaSlide() {
       setApiError(null);
     }
   }, [apiError]);
-
-  // Add success notifications
-  const handleSuccess = (message: string) => {
-    showToast(message, 'success');
-  };
 
   // Ready State UI
   if (gameState === 'ready') {

@@ -1,3 +1,5 @@
+// Remove or comment out all these unused imports
+/*
 import {
   Drawer,
   List,
@@ -9,6 +11,7 @@ import {
 import HomeIcon from '@mui/icons-material/Home';
 import SchoolIcon from '@mui/icons-material/School';
 import { useNavigate } from 'react-router-dom';
+*/
 
 interface SidebarProps {
   open: boolean;
