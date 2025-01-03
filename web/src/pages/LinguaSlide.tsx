@@ -752,7 +752,7 @@ function LinguaSlide() {
   // Ready State UI
   if (gameState === 'ready') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 -mt-32 bg-[#323437] text-[#d1d0c5] font-mono">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 -mt-32 bg-[#323437] text-[#d1d0c5] font-custom">
         <div className="w-full max-w-2xl space-y-12">
           {/* Title */}
           <div className="text-center space-y-2">
@@ -827,7 +827,7 @@ function LinguaSlide() {
   // Playing State UI
   if (gameState === 'playing') {
     return (
-      <div className="min-h-screen flex flex-col p-4 pt-8 bg-[#323437] text-[#d1d0c5] font-mono">
+      <div className="min-h-screen flex flex-col p-4 pt-8 bg-[#323437] text-[#d1d0c5] font-custom">
         {/* Timer and Progress */}
         <div className="w-full max-w-2xl mx-auto mb-8">
           <div className="flex justify-between items-center mb-2">
@@ -945,72 +945,86 @@ function LinguaSlide() {
   // Results State UI
   if (gameState === 'finished' && gameResult) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 -mt-32 bg-[#323437] text-[#d1d0c5] font-mono">
-        <div className="w-full max-w-2xl space-y-8">
-          <h2 className="text-4xl font-light text-center tracking-wider">Practice Summary</h2>
+      <div className="min-h-screen flex flex-col items-center p-4 -mt-12 bg-[#323437] text-[#d1d0c5] font-custom">
+        <div className="w-full max-w-2xl flex flex-col min-h-screen">
+          {/* Header - Reduced top padding */}
+          <div className="pt-4 pb-6">
+            <h2 className="text-4xl font-light text-center tracking-wider">Practice Summary</h2>
+          </div>
 
-          {wordList.some(w => w.skipped || w.hadIncorrectAttempt) ? (
-            <div className="space-y-4">
-              <h3 className="text-xl font-light text-[#646669]">Words to Practice:</h3>
-              <div className="space-y-1">
-                {wordList
-                  .filter(w => w.skipped || w.hadIncorrectAttempt)
-                  .map((word, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 rounded bg-[#2c2c2c]"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 hover:bg-[#3a3a3a] text-[#646669] hover:text-[#d1d0c5]"
-                          onClick={() => speak(word.word)}
+          {/* Content - with max height and reduced spacing */}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {wordList.some(w => w.skipped || w.hadIncorrectAttempt) ? (
+              <>
+                <h3 className="text-xl font-light text-[#646669] mb-3">Words to Practice:</h3>
+                {/* Scrollable container */}
+                <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2">
+                  <div className="space-y-1">
+                    {wordList
+                      .filter(w => w.skipped || w.hadIncorrectAttempt)
+                      .map((word, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 rounded bg-[#2c2c2c]"
                         >
-                          <Volume2 className="h-4 w-4" />
-                        </Button>
-                        <span className="text-xl font-light tracking-wide">{word.word}</span>
-                        {word.skipped && (
-                          <span className="text-sm font-light text-[#646669] italic tracking-wider">
-                            (skipped)
+                          <div className="flex items-center space-x-3">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 shrink-0 hover:bg-[#3a3a3a] text-[#646669] hover:text-[#d1d0c5]"
+                              onClick={() => speak(word.word)}
+                            >
+                              <Volume2 className="h-4 w-4" />
+                            </Button>
+                            <span className="text-xl font-light tracking-wide">{word.word}</span>
+                            {word.skipped && (
+                              <span className="text-sm font-light text-[#646669] italic tracking-wider">
+                                (skipped)
+                              </span>
+                            )}
+                            {!word.skipped && word.spokenWord && (
+                              <span className="text-sm font-light text-[#646669] italic tracking-wider truncate">
+                                (you said: {word.spokenWord})
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-sm font-light text-[#646669] shrink-0 ml-2">
+                            {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
                           </span>
-                        )}
-                        {!word.skipped && word.spokenWord && (
-                          <span className="text-sm font-light text-[#646669] italic tracking-wider">
-                            (you said: {word.spokenWord})
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm font-light text-[#646669]">
-                        {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
-                      </span>
-                    </div>
-                  ))}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center -mt-20">
+                <div className="text-center space-y-6">
+                  <Star className="h-24 w-24 text-[#e2b714] mx-auto" />
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-light">Perfect Pronunciation!</h3>
+                    <p className="text-[#646669]">
+                      Amazing job! You nailed every word.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center space-y-6 py-8">
-              <Star className="h-24 w-24 text-[#e2b714] mx-auto" />
-              <div className="space-y-2">
-                <h3 className="text-2xl font-light">Perfect Pronunciation!</h3>
-                <p className="text-[#646669]">
-                  Amazing job! You nailed every word.
-                </p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <Button
-            size="lg"
-            onClick={() => {
-              setGameState('ready');
-              setGameResult(null);
-            }}
-            className="w-full h-12 bg-[#e2b714] hover:bg-[#e2b714]/90 text-[#323437] font-light tracking-wider"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Try Again
-          </Button>
+          {/* Footer - Always visible with reduced padding */}
+          <div className="sticky bottom-0 pt-3 pb-2 bg-[#323437]">
+            <Button
+              size="lg"
+              onClick={() => {
+                setGameState('ready');
+                setGameResult(null);
+              }}
+              className="w-full h-12 bg-[#e2b714] hover:bg-[#e2b714]/90 text-[#323437] font-light tracking-wider"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );

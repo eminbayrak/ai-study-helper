@@ -8,19 +8,19 @@ interface NavbarProps {
 
 function Navbar({ onMenuClick }: NavbarProps) {
   return (
-    <nav className="fixed top-0 left-0 right-0 h-12 flex items-center justify-between px-4 bg-background/50 backdrop-blur-sm border-b border-border/40 z-50">
+    <nav className="fixed top-0 left-0 right-0 h-12 flex items-center justify-between px-4 bg-transparent backdrop-blur-md z-50 border-b border-[#2c2c2c]/50">
       <div className="flex items-center space-x-4">
         {/* Logo */}
-        <div className="text-lg font-semibold tracking-tight">
-          lingua<span className="text-primary">slide</span>
+        <div className="text-lg font-custom font-light tracking-wider">
+          lingua<span className="text-[#e2b714]">slide</span>
         </div>
         
         {/* Left side icons */}
         <div className="hidden md:flex items-center space-x-1">
-          <Button variant="ghost" size="icon" className="w-9 h-9">
+          <Button variant="ghost" size="icon" className="w-9 h-9 hover:bg-[#2c2c2c]">
             <Crown className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-9 h-9">
+          <Button variant="ghost" size="icon" className="w-9 h-9 hover:bg-[#2c2c2c]">
             <Info className="h-4 w-4" />
           </Button>
         </div>
@@ -28,13 +28,13 @@ function Navbar({ onMenuClick }: NavbarProps) {
 
       {/* Right side icons */}
       <div className="flex items-center space-x-1">
-        <Button variant="ghost" size="icon" className="w-9 h-9">
+        <Button variant="ghost" size="icon" className="w-9 h-9 hover:bg-[#2c2c2c]">
           <Bell className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="w-9 h-9">
+        <Button variant="ghost" size="icon" className="w-9 h-9 hover:bg-[#2c2c2c]">
           <Settings className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="w-9 h-9">
+        <Button variant="ghost" size="icon" className="w-9 h-9 hover:bg-[#2c2c2c]">
           <User className="h-4 w-4" />
         </Button>
       </div>
