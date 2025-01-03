@@ -1,0 +1,53 @@
+{
+  "easy": [
+    "merhaba",
+    "günaydın",
+    "iyi akşamlar",
+    "hoşçakal",
+    "teşekkürler",
+    "rica ederim",
+    "evet",
+    "hayır",
+    "lütfen",
+    "affedersiniz",
+    "nasılsınız",
+    "iyiyim",
+    "tamam",
+    "görüşürüz",
+    "hoş geldiniz"
+  ],
+  "medium": [
+    "öğrenci",
+    "öğretmen",
+    "kitap",
+    "okul",
+    "araba",
+    "ev",
+    "aile",
+    "arkadaş",
+    "yemek",
+    "içecek",
+    "zaman",
+    "hava",
+    "çalışmak",
+    "dinlemek",
+    "konuşmak"
+  ],
+  "hard": [
+    "memnun oldum",
+    "iyi günler dilerim",
+    "özür dilerim",
+    "anlıyorum",
+    "bilmiyorum",
+    "tekrar eder misiniz",
+    "yardım eder misiniz",
+    "nerede oturuyorsunuz",
+    "ne kadar",
+    "saat kaç",
+    "afiyet olsun",
+    "kolay gelsin",
+    "geçmiş olsun",
+    "iyi yolculuklar",
+    "iyi şanslar"
+  ]
+} 

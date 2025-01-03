@@ -53,7 +53,7 @@ const failureSound = failureSoundFile;
 type Difficulty = 'easy' | 'medium' | 'hard';
 type GameState = 'ready' | 'playing' | 'finished';
 type Timeout = ReturnType<typeof setTimeout>;
-type Language = 'en' | 'ja';
+type Language = 'en' | 'ja' | 'tr';
 
 interface WordStatus {
   word: string;
@@ -102,12 +102,19 @@ const SUPPORTED_LANGUAGES: Record<Language, LanguageConfig> = {
     recognition: 'ja-JP',
     displayName: '日本語',
   },
+  tr: {
+    code: 'tr',
+    name: 'Turkish',
+    recognition: 'tr-TR',
+    displayName: 'Türkçe',
+  },
 };
 
 import profanity from 'leo-profanity';
 import wordData from '../data/words.json';
 import substitutionsData from '../data/substitutions.json';
 import wordDataJa from '../data/words_ja.json';
+import wordDataTr from '../data/words_tr.json';
 
 // Add these helper functions at the top of your file
 const isMobileBrowser = () => {
@@ -183,7 +190,10 @@ function LinguaSlide() {
       setApiError(null);
 
       // Get the correct word data based on selected language
-      const currentWordData = selectedLanguage === 'en' ? wordData : wordDataJa;
+      const currentWordData = 
+        selectedLanguage === 'en' ? wordData : 
+        selectedLanguage === 'ja' ? wordDataJa :
+        wordDataTr;
 
       // Get all words for the current difficulty
       const allWords = currentWordData[difficulty];
@@ -992,64 +1002,74 @@ function LinguaSlide() {
         className="min-h-[calc(100vh-3rem)] flex flex-col p-4"
         style={{ color: currentTheme.colors.text }}
       >
-        {/* Timer and Progress */}
-        <div className="w-full max-w-2xl mx-auto mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-1">
-              <Timer 
-                className="h-4 w-4" 
-                style={{ color: currentTheme.colors.main }}
-              />
-              <span
-                style={{
-                  color: timeLeft <= 10 ? currentTheme.colors.error : currentTheme.colors.main
-                }}
-                className="text-xl font-light"
-              >
-                {timeLeft}s
-              </span>
-            </div>
-            <span
-              style={{ color: currentTheme.colors.main }}
-              className="text-xs font-light"
-            >
-              {wordList.filter(w => w.completed).length}/{wordList.length}
-            </span>
-          </div>
-          <Progress
-            value={progress}
-            className="h-0.5"
-            style={{
-              backgroundColor: `${currentTheme.colors.sub}40`,
-              ['--progress-color' as string]: currentTheme.colors.main,
-            }}
-          />
-        </div>
-
-        {/* Current Word */}
-        <div
-          className="w-full max-w-2xl mx-auto p-4 mb-4 rounded"
-          style={{
-            backgroundColor: currentTheme.colors.card,
-            border: `1px solid ${currentTheme.colors.main}40`,
+        {/* Sticky Header Container */}
+        <div 
+          className="sticky top-0 z-10 bg-opacity-80 backdrop-blur-sm -mx-4 px-4 pb-2"
+          style={{ 
+            backgroundColor: currentTheme.colors.bg,
+            top: '3rem',
           }}
         >
-          <div className="text-center">
-            <span className="text-4xl font-light tracking-wider">
-              {wordList.find(w => w.unlocked && !w.completed)?.word || ''}
-            </span>
+          {/* Timer and Progress */}
+          <div className="w-full max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              {/* Timer */}
+              <div className="flex items-center gap-1">
+                <Timer 
+                  className="h-4 w-4" 
+                  style={{ color: currentTheme.colors.main }}
+                />
+                <span
+                  style={{
+                    color: timeLeft <= 10 ? currentTheme.colors.error : currentTheme.colors.main
+                  }}
+                  className="text-xl font-light"
+                >
+                  {timeLeft}s
+                </span>
+              </div>
+
+              {/* Current Word - Moved between timer and progress */}
+              <div className="flex-1 text-center mx-4">
+                <span className="text-xl font-light tracking-wider">
+                  {wordList.find(w => w.unlocked && !w.completed)?.word || ''}
+                </span>
+              </div>
+
+              {/* Progress Counter */}
+              <span
+                style={{ color: currentTheme.colors.main }}
+                className="text-xs font-light"
+              >
+                {wordList.filter(w => w.completed).length}/{wordList.length}
+              </span>
+            </div>
+
+            <Progress
+              value={progress}
+              className="h-0.5"
+              style={{
+                backgroundColor: `${currentTheme.colors.sub}40`,
+                ['--progress-color' as string]: currentTheme.colors.main,
+              }}
+            />
           </div>
         </div>
 
-        {/* Word List */}
-        <div className="w-full max-w-2xl mx-auto flex-1 overflow-hidden">
+        {/* Word List - Adjust spacing and height */}
+        <div className="w-full max-w-2xl mx-auto flex-1 overflow-hidden mt-8">
           <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <div 
+              className="flex-1 overflow-y-auto space-y-2 pb-28 pt-2"
+              style={{
+                maxHeight: 'calc(100vh - 14rem)',
+              }}
+            >
               {wordList.map((item, index) => (
                 <div
                   key={index}
                   id={`word-${index}`}
-                  className="p-3 rounded transition-all flex items-center"
+                  className="p-2.5 rounded transition-all flex items-center"
                   style={{
                     backgroundColor: item.unlocked && !item.completed
                       ? currentTheme.colors.card
@@ -1068,23 +1088,23 @@ function LinguaSlide() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 mr-3 hover:opacity-100"
+                    className="h-7 w-7 mr-2 hover:opacity-100"
                     style={{
                       color: currentTheme.colors.main,
                       opacity: 0.8
                     }}
                     onClick={() => speak(item.word)}
                   >
-                    <Volume2 className="h-4 w-4" />
+                    <Volume2 className="h-3.5 w-3.5" />
                   </Button>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-medium tracking-wide">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium tracking-wide">
                         {item.word}
                       </span>
                       <span
-                        className="text-sm font-light tracking-wider opacity-80"
+                        className="text-xs font-light tracking-wider opacity-80"
                         style={{ 
                           color: currentTheme.colors.main
                         }}
@@ -1097,12 +1117,12 @@ function LinguaSlide() {
                   {item.completed && (
                     item.skipped ? (
                       <X 
-                        className="h-4 w-4 ml-3" 
+                        className="h-3.5 w-3.5 ml-2"
                         style={{ color: currentTheme.colors.error }} 
                       />
                     ) : (
                       <Star 
-                        className="h-4 w-4 ml-3" 
+                        className="h-3.5 w-3.5 ml-2"
                         style={{ color: currentTheme.colors.success }} 
                       />
                     )
@@ -1113,7 +1133,7 @@ function LinguaSlide() {
           </div>
         </div>
 
-        {/* Control Buttons */}
+        {/* Control Buttons - Keep at bottom */}
         <div
           className="fixed bottom-0 left-0 right-0 p-3 backdrop-blur-sm border-t"
           style={{
