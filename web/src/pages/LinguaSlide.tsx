@@ -999,7 +999,7 @@ function LinguaSlide() {
               style={{ color: currentTheme.colors.sub }} 
               className="text-xs font-light"
             >
-              {progress}%
+              {wordList.filter(w => w.completed).length}/{wordList.length}
             </span>
           </div>
           <Progress 
@@ -1042,12 +1042,7 @@ function LinguaSlide() {
                   className="p-2 rounded transition-all flex items-center"
                   style={{
                     backgroundColor: item.unlocked && !item.completed 
-                      ? (currentTheme.id.includes('light') || 
-                         currentTheme.id === 'sepia' || 
-                         currentTheme.id === 'lavender' || 
-                         currentTheme.id === 'mint'
-                           ? `${currentTheme.colors.sub}30`  // More transparent for light themes
-                           : currentTheme.colors.sub)        // Keep original for dark themes
+                      ? currentTheme.colors.card
                       : 'transparent',
                     opacity: !item.unlocked ? 0.4 : 1,
                     color: item.completed ? 
