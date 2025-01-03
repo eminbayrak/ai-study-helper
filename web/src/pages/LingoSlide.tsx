@@ -18,6 +18,8 @@ import {
   Play,
   Star,
   Timer,
+  Globe2,
+  ChevronDown,
 } from "lucide-react";
 import {
   ToggleGroup,
@@ -26,6 +28,19 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { Toaster } from "../components/ui/toaster";
 import { toast } from "../hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 
 // Assets
 import successSoundFile from '../assets/sounds/success.mp3';
@@ -38,6 +53,7 @@ const failureSound = failureSoundFile;
 type Difficulty = 'easy' | 'medium' | 'hard';
 type GameState = 'ready' | 'playing' | 'finished';
 type Timeout = ReturnType<typeof setTimeout>;
+type Language = 'en' | 'ja';
 
 interface WordStatus {
   word: string;
@@ -59,6 +75,13 @@ interface GameResult {
   accuracy: number;
 }
 
+interface LanguageConfig {
+  code: string;
+  name: string;
+  recognition: string;
+  displayName: string;
+}
+
 // Constants
 const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
   easy: 45,
@@ -66,9 +89,25 @@ const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
   hard: 75,
 };
 
+const SUPPORTED_LANGUAGES: Record<Language, LanguageConfig> = {
+  en: {
+    code: 'en',
+    name: 'English',
+    recognition: 'en-US',
+    displayName: 'English',
+  },
+  ja: {
+    code: 'ja',
+    name: 'Japanese',
+    recognition: 'ja-JP',
+    displayName: '日本語',
+  },
+};
+
 import profanity from 'leo-profanity';
 import wordData from '../data/words.json';
 import substitutionsData from '../data/substitutions.json';
+import wordDataJa from '../data/words_ja.json';
 
 // Add these helper functions at the top of your file
 const isMobileBrowser = () => {
@@ -99,6 +138,7 @@ function LinguaSlide() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
 
   // Add gameStateRef to track current state in callbacks
   const gameStateRef = useRef<GameState>('ready');
@@ -141,8 +181,11 @@ function LinguaSlide() {
       setIsLoading(true);
       setApiError(null);
 
+      // Get the correct word data based on selected language
+      const currentWordData = selectedLanguage === 'en' ? wordData : wordDataJa;
+
       // Get all words for the current difficulty
-      const allWords = wordData[difficulty];
+      const allWords = currentWordData[difficulty];
       
       // Filter out previously used words
       const availableWords = allWords.filter(word => !usedWords.has(word));
@@ -281,7 +324,7 @@ function LinguaSlide() {
           recognition.continuous = true;
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
-          recognition.lang = 'en-US';
+          recognition.lang = SUPPORTED_LANGUAGES[selectedLanguage].recognition;
 
           // Reduce the processing delay
           const processDelay = 100;
@@ -605,7 +648,7 @@ function LinguaSlide() {
 
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
+    utterance.lang = SUPPORTED_LANGUAGES[selectedLanguage].recognition;
     window.speechSynthesis.speak(utterance);
   };
 
@@ -810,6 +853,45 @@ function LinguaSlide() {
               For the best experience, please use a desktop browser with Chrome.
             </div>
           )}
+
+          {/* Add Language Selector here */}
+          <div className="flex justify-center items-center gap-2 mb-8">
+            <Globe2 
+              className="h-5 w-5"
+              style={{ color: currentTheme.colors.sub }} 
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="text-base font-light px-2 h-8 flex items-center gap-2 hover:bg-opacity-10 hover:bg-white"
+                  style={{ color: currentTheme.colors.sub }}
+                >
+                  {SUPPORTED_LANGUAGES[selectedLanguage].name.toLowerCase()}
+                  <ChevronDown className="h-4 w-4 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                style={{
+                  backgroundColor: currentTheme.colors.bg,
+                  border: `1px solid ${currentTheme.colors.sub}`,
+                }}
+              >
+                {Object.entries(SUPPORTED_LANGUAGES).map(([code, config]) => (
+                  <DropdownMenuItem
+                    key={code}
+                    onClick={() => setSelectedLanguage(code as Language)}
+                    className="text-base"
+                    style={{
+                      color: currentTheme.colors.text,
+                    }}
+                  >
+                    {config.displayName}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Difficulty Selection */}
           <div className="space-y-8">
