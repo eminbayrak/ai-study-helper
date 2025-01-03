@@ -1,36 +1,27 @@
 import { useEffect, useState, useRef } from 'react';
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Progress } from "../components/ui/progress";
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  LinearProgress,
-  IconButton,
-  Stack,
-  ToggleButtonGroup,
-  ToggleButton,
-  CircularProgress,
-  Button,
-  Alert,
-  Snackbar,
-} from '@mui/material';
-
-// Icons
+  Mic,
+  MicOff,
+  SkipForward,
+  RefreshCw,
+  Volume2,
+  X,
+  Play,
+  Star
+} from "lucide-react";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import {
-  Mic as MicIcon,
-  MicOff as MicOffIcon,
-  SkipNext as SkipNextIcon,
-  Refresh as RefreshIcon,
-  VolumeUp as VolumeUpIcon,
-  Close as CloseIcon,
-  PlayArrow as PlayArrowIcon,
-  CheckCircle as CheckCircleIcon,
-  Star as StarIcon,
-} from '@mui/icons-material';
+  ToggleGroup,
+  ToggleGroupItem,
+} from "../components/ui/toggle-group";
+import { cn } from "../lib/utils";
 
 // Assets
-import successSound from '../assets/sounds/success.mp3';
-import failureSound from '../assets/sounds/failure.mp3';
+const successSound = 'https://assets.mixkit.co/active_storage/sfx/2018/success-1-6297.wav';
+const failureSound = 'https://assets.mixkit.co/active_storage/sfx/2018/failure-drum-sound-effect-2-7184.wav';
 
 // Types
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -758,767 +749,274 @@ function LinguaSlide() {
     }
   }, [gameState, isLoading]);
 
+  // Ready State UI
   if (gameState === 'ready') {
-    const isUnsupported = isMobileBrowser() || !isSpeechRecognitionSupported();
-
     return (
-      <Box sx={{ 
-        maxWidth: {
-          xs: '95%',
-          sm: 600,
-          md: 800
-        },
-        mx: 'auto', 
-        p: { xs: 2, sm: 3 },
-        minHeight: 'fit-content',
-        bgcolor: 'background.default',
-        color: 'text.primary',
-      }}>
-        <Box sx={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-          mb: { xs: 2, sm: 4 },
-        }}>
-          <Typography 
-            variant="h4" 
-            align="center" 
-            sx={{ 
-              fontSize: { xs: '1.8rem', sm: '2.125rem' }
-            }}
-          >
-            Lingua Slide
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              px: 1,
-              py: 0.5,
-              borderRadius: 1,
-              fontSize: '0.7rem',
-              fontWeight: 'bold',
-              letterSpacing: '0.05em',
-              transform: 'translateY(-8px)'
-            }}
-          >
-            BETA
-          </Typography>
-        </Box>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 -mt-32 bg-[#323437] text-[#d1d0c5] font-mono">
+        <div className="w-full max-w-2xl space-y-12">
+          {/* Title */}
+          <div className="text-center space-y-2">
+            <h1 className="text-5xl font-light tracking-wider">
+              lingua<span className="text-[#e2b714]">slide</span>
+            </h1>
+            <div className="inline-flex items-center px-2 py-1 rounded bg-[#2c2c2c] text-[#646669] text-xs font-medium">
+              BETA
+            </div>
+          </div>
 
-        {isUnsupported ? (
-          <Card sx={{
-            p: 3,
-            bgcolor: 'rgba(226, 183, 20, 0.1)',
-            borderRadius: 2,
-            mb: 3,
-            border: '1px solid',
-            borderColor: 'warning.main',
-          }}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'flex-start', 
-              gap: 2 
-            }}>
-              <Typography variant="h5" color="warning.main" sx={{ lineHeight: 1 }}>
-                📱
-              </Typography>
-              <Box>
-                <Typography 
-                  variant="h6" 
-                  color="warning.main" 
-                  gutterBottom 
-                  sx={{ fontWeight: 500 }}
-                >
-                  Mobile Device Detected
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Lingua Slide requires advanced speech recognition features that aren't fully supported on mobile browsers. For the best learning experience:
-                </Typography>
-                <Box 
-                  sx={{ 
-                    bgcolor: 'background.paper',
-                    p: 2,
-                    borderRadius: 1,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Typography 
-                    variant="subtitle2" 
-                    color="primary"
-                    gutterBottom
-                  >
-                    💡 Recommended Setup:
-                  </Typography>
-                  <Box component="ul" sx={{ 
-                    m: 0, 
-                    pl: 2,
-                    '& li': { 
-                      mb: 1,
-                      color: 'text.secondary',
-                      fontSize: '0.875rem',
-                    }
-                  }}>
-                    <li>Use a desktop or laptop computer</li>
-                    <li>Chrome browser is recommended for best performance</li>
-                    <li>Connect a good quality microphone</li>
-                    <li>Find a quiet environment for accurate recognition</li>
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
-          </Card>
-        ) : null}
+          {/* Device Warning */}
+          {isMobileBrowser() && (
+            <div className="bg-[#2c2c2c] p-4 rounded text-sm text-[#e2b714]">
+              For the best experience, please use a desktop browser with Chrome.
+            </div>
+          )}
 
-        <Card sx={{ 
-          p: { xs: 2, sm: 4 },
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          border: 1,
-          borderColor: 'divider',
-          boxShadow: 'none'
-        }}>
-          <Stack spacing={6} alignItems="center">
-            <Typography variant="h6" color="text.secondary">
+          {/* Difficulty Selection */}
+          <div className="space-y-8">
+            <h2 className="text-lg font-light text-center text-[#646669]">
               Select Difficulty
-            </Typography>
+            </h2>
 
-            <ToggleButtonGroup
+            <ToggleGroup
+              type="single"
               value={difficulty}
-              exclusive
-              onChange={(_, newDifficulty) => newDifficulty && setDifficulty(newDifficulty)}
-              sx={{
-                '& .MuiToggleButton-root': {
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1rem',
-                  borderColor: 'divider'
-                }
-              }}
+              onValueChange={(value) => value && setDifficulty(value as Difficulty)}
+              className="justify-center"
             >
-              <ToggleButton value="easy">Easy</ToggleButton>
-              <ToggleButton value="medium">Medium</ToggleButton>
-              <ToggleButton value="hard">Hard</ToggleButton>
-            </ToggleButtonGroup>
+              <ToggleGroupItem value="easy" className="data-[state=on]:bg-[#e2b714] data-[state=on]:text-[#323437]">Easy</ToggleGroupItem>
+              <ToggleGroupItem value="medium" className="data-[state=on]:bg-[#e2b714] data-[state=on]:text-[#323437]">Medium</ToggleGroupItem>
+              <ToggleGroupItem value="hard" className="data-[state=on]:bg-[#e2b714] data-[state=on]:text-[#323437]">Hard</ToggleGroupItem>
+            </ToggleGroup>
 
-            <Box sx={{ 
-              bgcolor: 'rgba(226, 183, 20, 0.1)', 
-              p: 2, 
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'primary.main',
-              maxWidth: 400,
-              textAlign: 'center'
-            }}>
-              <Typography 
-                variant="subtitle1" 
-                color="primary"
-                sx={{ mb: 1, fontWeight: 500 }}
+            {/* Best Practices */}
+            <div className="bg-[#2c2c2c] p-4 rounded">
+              <h3 className="font-medium text-[#e2b714] mb-2">📢 For Best Results</h3>
+              <ul className="text-sm text-[#646669] space-y-1">
+                <li>• Position microphone close to mouth (4-6 inches)</li>
+                <li>• Speak clearly at a normal pace</li>
+                <li>• Minimize background noise</li>
+                <li>• Pronounce words naturally</li>
+              </ul>
+            </div>
+
+            {/* Start Button */}
+            <div className="flex flex-col items-center gap-6">
+              <Button
+                size="lg"
+                className="w-24 h-24 rounded-full bg-[#e2b714] hover:bg-[#e2b714]/90 text-[#323437]"
+                onClick={startGame}
+                disabled={isStarting}
               >
-                📢 For Best Results
-              </Typography>
-              <Typography 
-                variant="body2" 
-                color="text.secondary"
-                sx={{ lineHeight: 1.6 }}
-              >
-                • Position your microphone close to your mouth (4-6 inches)<br />
-                • Speak clearly and at a normal pace<br />
-                • Minimize background noise<br />
-                • Pronounce each word as naturally as possible
-              </Typography>
-            </Box>
+                {isStarting ? (
+                  <RefreshCw className="h-8 w-8 animate-spin" />
+                ) : (
+                  <Play className="h-8 w-8" />
+                )}
+              </Button>
 
-            <IconButton
-              sx={{ 
-                width: 100,
-                height: 100,
-                backgroundColor: 'primary.main',
-                transition: 'transform 0.2s',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                  transform: 'scale(1.05)'
-                }
-              }}
-              onClick={startGame}
-              disabled={isStarting}
-            >
-              {isStarting ? (
-                <CircularProgress color="inherit" size={32} />
-              ) : (
-                <PlayArrowIcon sx={{ fontSize: 48, color: 'white' }} />
-              )}
-            </IconButton>
-
-            <Typography 
-              variant="body1" 
-              color="text.secondary"
-              align="center"
-              sx={{ maxWidth: 400 }}
-            >
-              Practice your pronunciation with {DIFFICULTY_TIME_LIMITS[difficulty]} seconds timer
-            </Typography>
-          </Stack>
-        </Card>
-
-        <Snackbar
-          open={!!apiError}
-          autoHideDuration={6000}
-          onClose={() => setApiError(null)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          sx={{ zIndex: 9999 }}
-        >
-          <Alert 
-            onClose={() => setApiError(null)} 
-            severity="error"
-            sx={{ width: '100%' }}
-          >
-            {apiError}
-          </Alert>
-        </Snackbar>
-
-        <Snackbar
-          open={showInactiveWarning}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert 
-            severity="warning" 
-            onClose={() => setShowInactiveWarning(false)}
-            sx={{ width: '100%' }}
-          >
-            Please start speaking! The game will end in a few seconds if no speech is detected.
-          </Alert>
-        </Snackbar>
-
-        <Snackbar
-          open={!!errorToast}
-          autoHideDuration={6000}
-          onClose={() => setErrorToast(null)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          sx={{ zIndex: 9999 }}
-        >
-          <Alert 
-            onClose={() => setErrorToast(null)} 
-            severity="error"
-            sx={{ width: '100%' }}
-          >
-            {errorToast}
-          </Alert>
-        </Snackbar>
-      </Box>
+              <p className="text-sm text-[#646669]">
+                Practice pronunciation with {DIFFICULTY_TIME_LIMITS[difficulty]} seconds timer
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  if (gameState === 'finished' && gameResult) {
-    const hasWordsToReview = wordList.some(w => w.skipped || w.hadIncorrectAttempt);
-    const hasInactivitySkip = wordList.some(w => w.inactivitySkip);
-
+  // Playing State UI
+  if (gameState === 'playing') {
     return (
-      <Box sx={{ 
-        maxWidth: '100%',
-        width: 'fit-content',
-        minHeight: 'fit-content',
-        mx: 'auto', 
-        p: 2,
-        px: 4,
-        pb: 4,
-        bgcolor: 'background.paper',
-        color: 'text.primary',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 2,
-        border: 1,
-        borderColor: 'divider',
-        boxShadow: 'none'
-      }}>
-        <Typography 
-          variant="h4" 
-          align="center" 
-          gutterBottom
-          sx={{ color: 'text.primary', mb: 2 }}
-        >
-          Practice Summary
-        </Typography>
+      <div className="min-h-screen flex flex-col p-4 pt-8 bg-[#323437] text-[#d1d0c5] font-mono">
+        {/* Timer and Progress */}
+        <div className="w-full max-w-2xl mx-auto mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className={cn(
+              "text-2xl font-light text-[#646669]",
+              timeLeft <= 10 && "text-[#e2b714]"
+            )}>
+              {timeLeft}s
+            </span>
+            <span className="text-sm font-light text-[#646669]">
+              {progress}%
+            </span>
+          </div>
+          <Progress 
+            value={progress} 
+            className="h-0.5 bg-[#2c2c2c]" 
+          />
+        </div>
 
-        <Box sx={{ 
-          width: '100%',
-          minWidth: { xs: '100%', sm: 550, md: 650 },
-          maxWidth: { xs: '100%', sm: 650, md: 750 },
-          mx: 'auto',
-          flex: '1 0 auto',
-          mb: 4
-        }}>
-          {hasWordsToReview ? (
-            <>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Words to Practice:
-              </Typography>
+        {/* Word List */}
+        <div className="w-full max-w-2xl mx-auto flex-1 space-y-1">
+          {wordList.map((item, index) => (
+            <div
+              key={index}
+              id={`word-${index}`}
+              className={cn(
+                "p-3 rounded transition-all flex items-center",
+                item.unlocked && !item.completed && "bg-[#2c2c2c]",
+                !item.unlocked && "opacity-40",
+                item.completed && !item.hadIncorrectAttempt && !item.skipped && "text-[#4CAF50]",
+                (item.hadIncorrectAttempt || item.skipped) && "text-[#e2b714]"
+              )}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 hover:bg-[#3a3a3a] text-[#646669] hover:text-[#d1d0c5] mr-2"
+                onClick={() => speak(item.word)}
+              >
+                <Volume2 className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl font-light tracking-wide">{item.word}</span>
+                  <span className="text-sm font-light text-[#646669] tracking-wider">
+                    {item.phonetic}
+                  </span>
+                </div>
+              </div>
 
-              <Stack spacing={1}>
+              {item.completed && (
+                item.skipped ? (
+                  <X className="h-4 w-4 text-[#e2b714] ml-2" />
+                ) : (
+                  <Star className="h-4 w-4 text-[#4CAF50] ml-2" />
+                )
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Control Buttons */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#323437]/90 backdrop-blur-sm border-t border-[#2c2c2c]">
+          <div className="flex justify-center gap-2 max-w-2xl mx-auto">
+            <Button
+              size="lg"
+              variant="ghost"
+              className={cn(
+                "h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c]",
+                isListening && "bg-[#2c2c2c] text-[#e2b714]"
+              )}
+              onClick={toggleListening}
+            >
+              {isListening ? (
+                <Mic className="h-4 w-4" />
+              ) : (
+                <MicOff className="h-4 w-4" />
+              )}
+            </Button>
+
+            <Button
+              size="lg"
+              variant="ghost"
+              className="h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c]"
+              onClick={handleSkip}
+              disabled={gameState !== 'playing'}
+            >
+              <SkipForward className="h-4 w-4" />
+            </Button>
+
+            <Button
+              size="lg"
+              variant="ghost"
+              className="h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c]"
+              onClick={fetchWords}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+
+            <Button
+              size="lg"
+              variant="ghost"
+              className="h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c] text-[#f44336]"
+              onClick={handleClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Results State UI
+  if (gameState === 'finished' && gameResult) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 -mt-32 bg-[#323437] text-[#d1d0c5] font-mono">
+        <div className="w-full max-w-2xl space-y-8">
+          <h2 className="text-4xl font-light text-center tracking-wider">Practice Summary</h2>
+
+          {wordList.some(w => w.skipped || w.hadIncorrectAttempt) ? (
+            <div className="space-y-4">
+              <h3 className="text-xl font-light text-[#646669]">Words to Practice:</h3>
+              <div className="space-y-1">
                 {wordList
                   .filter(w => w.skipped || w.hadIncorrectAttempt)
-                  .map((word) => (
-                    <Box
-                      key={word.order}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        p: 1.5,
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                        width: '100%'
-                      }}
+                  .map((word, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded bg-[#2c2c2c]"
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                        <IconButton 
+                      <div className="flex items-center space-x-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 hover:bg-[#3a3a3a] text-[#646669] hover:text-[#d1d0c5]"
                           onClick={() => speak(word.word)}
-                          sx={{ color: 'text.primary' }}
                         >
-                          <VolumeUpIcon />
-                        </IconButton>
-                        <Typography sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {word.word}
-                          <CloseIcon 
-                            sx={{ 
-                              color: 'error.main',
-                              fontSize: '1rem'
-                            }}
-                          />
-                          {word.skipped && (
-                            <Typography 
-                              component="span" 
-                              sx={{ 
-                                color: 'text.secondary',
-                                fontStyle: 'italic',
-                                ml: 1 
-                              }}
-                            >
-                              (skipped)
-                            </Typography>
-                          )}
-                          {!word.skipped && word.spokenWord && (
-                            <Typography 
-                              component="span" 
-                              sx={{ 
-                                color: 'text.secondary',
-                                fontStyle: 'italic',
-                                ml: 1 
-                              }}
-                            >
-                              (you said: {word.spokenWord})
-                            </Typography>
-                          )}
-                        </Typography>
-                      </Box>
-                      <Typography 
-                        sx={{ 
-                          color: 'text.secondary',
-                          minWidth: 100,
-                          textAlign: 'right'
-                        }}
-                      >
+                          <Volume2 className="h-4 w-4" />
+                        </Button>
+                        <span className="text-xl font-light tracking-wide">{word.word}</span>
+                        {word.skipped && (
+                          <span className="text-sm font-light text-[#646669] italic tracking-wider">
+                            (skipped)
+                          </span>
+                        )}
+                        {!word.skipped && word.spokenWord && (
+                          <span className="text-sm font-light text-[#646669] italic tracking-wider">
+                            (you said: {word.spokenWord})
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm font-light text-[#646669]">
                         {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
-                      </Typography>
-                    </Box>
+                      </span>
+                    </div>
                   ))}
-              </Stack>
-            </>
+              </div>
+            </div>
           ) : (
-            <Box sx={{ 
-              textAlign: 'center', 
-              py: 3,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 1.5,
-              minHeight: 'fit-content'
-            }}>
-              <StarIcon sx={{ 
-                fontSize: 96, 
-                color: 'primary.main',
-                animation: 'glow 2s ease-in-out infinite alternate'
-              }} />
-              <Typography variant="h5" sx={{ color: 'text.primary' }}>
-                Perfect Pronunciation!
-              </Typography>
-              <Typography sx={{ 
-                color: 'text.secondary',
-                fontSize: '1.1rem'
-              }}>
-                Amazing job! You nailed every word.
-              </Typography>
-            </Box>
+            <div className="text-center space-y-6 py-8">
+              <Star className="h-24 w-24 text-[#e2b714] mx-auto" />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-light">Perfect Pronunciation!</h3>
+                <p className="text-[#646669]">
+                  Amazing job! You nailed every word.
+                </p>
+              </div>
+            </div>
           )}
-        </Box>
 
-        <Button
-          variant="contained"
-          onClick={() => {
-            setGameState('ready');
-            setGameResult(null);
-          }}
-          sx={{ 
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            bgcolor: '#FF6B6B',
-            color: 'white',
-            '&:hover': {
-              bgcolor: '#FF5252'
-            },
-            px: 3,
-            py: 1,
-            borderRadius: 2,
-            fontSize: '0.9rem',
-            alignSelf: 'center',
-            mt: 2
-          }}
-        >
-          <RefreshIcon sx={{ fontSize: '1.2rem' }} />
-          Try Again
-        </Button>
-
-        {hasInactivitySkip ? (
-          <Box sx={{ textAlign: 'center', py: 3 }}>
-            <Typography variant="h5" color="error" gutterBottom>
-              Game Ended Due to Inactivity
-            </Typography>
-            <Typography color="text.secondary">
-              Remember to speak clearly into your microphone when practicing pronunciation.
-            </Typography>
-          </Box>
-        ) : null}
-      </Box>
+          <Button
+            size="lg"
+            onClick={() => {
+              setGameState('ready');
+              setGameResult(null);
+            }}
+            className="w-full h-12 bg-[#e2b714] hover:bg-[#e2b714]/90 text-[#323437] font-light tracking-wider"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </div>
     );
   }
 
-  return (
-    <>
-      <Box sx={{ 
-        maxWidth: {
-          xs: '95%',
-          sm: 600,
-          md: 800
-        },
-        mx: 'auto', 
-        p: { xs: 2, sm: 3 },
-        minHeight: 'fit-content',
-        bgcolor: 'background.default',
-        color: 'text.primary',
-      }}>
-        <Box sx={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-          mb: { xs: 2, sm: 4 },
-        }}>
-          <Typography 
-            variant="h4" 
-            align="center" 
-            sx={{ 
-              fontSize: { xs: '1.8rem', sm: '2.125rem' }
-            }}
-          >
-            Lingua Slide
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              px: 1,
-              py: 0.5,
-              borderRadius: 1,
-              fontSize: '0.7rem',
-              fontWeight: 'bold',
-              letterSpacing: '0.05em',
-              transform: 'translateY(-8px)'
-            }}
-          >
-            BETA
-          </Typography>
-        </Box>
-
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 2 
-          }}>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: timeLeft <= 10 ? 'error.main' : 'text.primary',
-                transition: 'color 0.3s',
-                fontFamily: 'Roboto Mono, monospace',
-              }}
-            >
-              Time Left: {timeLeft}s
-            </Typography>
-            <Typography 
-              variant="body2" 
-              color="text.secondary"
-            >
-              Progress: {progress}%
-            </Typography>
-          </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={progress}
-            sx={{
-              height: 6,
-              borderRadius: 3,
-              bgcolor: 'rgba(255, 255, 255, 0.1)',
-              '& .MuiLinearProgress-bar': {
-                bgcolor: 'primary.main',
-                borderRadius: 3,
-              }
-            }}
-          />
-        </Box>
-
-        <Card sx={{ 
-          p: { xs: 2, sm: 3 },
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          border: 1,
-          borderColor: 'divider',
-          boxShadow: 'none',
-          mb: { xs: 6, sm: 8 },
-          maxHeight: 'calc(100vh - 300px)',
-          overflow: 'auto',
-          scrollBehavior: 'smooth',
-        }}>
-          <Stack spacing={2} sx={{ position: 'relative' }}>
-            {wordList
-              .sort((a, b) => (a.order || 0) - (b.order || 0))
-              .map((item, index) => (
-                <Card 
-                  key={item.order || index}
-                  id={`word-${index}`}
-                  sx={{ 
-                    bgcolor: (!item.completed && item.unlocked) 
-                      ? 'action.hover'
-                      : 'background.paper',
-                    opacity: item.unlocked ? 1 : 0.5,
-                    transition: 'all 0.3s',
-                    borderRadius: 2,
-                    border: '2px solid',
-                    borderColor: (!item.completed && item.unlocked)
-                      ? 'divider'
-                      : item.completed && !item.hadIncorrectAttempt && !item.skipped
-                        ? 'success.main'
-                        : 'warning.main',
-                    boxShadow: 'none',
-                    '&:hover': {
-                      bgcolor: (!item.completed && item.unlocked)
-                        ? 'action.selected'
-                        : 'action.hover',
-                    }
-                  }}
-                >
-                  <CardContent sx={{ 
-                    p: 2,
-                    '&:last-child': { pb: 2 }
-                  }}>
-                    <Stack 
-                      direction="row" 
-                      spacing={1} 
-                      alignItems="center"
-                      sx={{ 
-                        flexWrap: 'nowrap',
-                        minWidth: 0
-                      }}
-                    >
-                      <IconButton 
-                        onClick={() => speak(item.word)}
-                        size="small"
-                      >
-                        <VolumeUpIcon />
-                      </IconButton>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        gap: 0.5,
-                        minWidth: 0,
-                        flex: 1
-                      }}>
-                        <Box sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 1
-                        }}>
-                          <Typography 
-                            variant="h6" 
-                            sx={{ 
-                              flexShrink: 0,
-                              fontSize: '1.1rem'
-                            }}
-                          >
-                            {item.word}
-                          </Typography>
-                          <Typography 
-                            variant="body2" 
-                            color="text.secondary"
-                            sx={{ 
-                              flexShrink: 1,
-                              minWidth: 0,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            ({item.phonetic})
-                          </Typography>
-                        </Box>
-                      </Box>
-                      {item.completed && (
-                        item.skipped ? (
-                          <CloseIcon 
-                            sx={{ 
-                              flexShrink: 0,
-                              color: 'error.main'
-                            }}
-                          />
-                        ) : (
-                          <CheckCircleIcon 
-                            color="success" 
-                            sx={{ flexShrink: 0 }}
-                          />
-                        )
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))}
-          </Stack>
-        </Card>
-
-        <Box
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            py: { xs: 1.5, sm: 2 },
-            px: { xs: 2, sm: 3 },
-            bgcolor: 'background.paper',
-            borderTop: 1,
-            borderColor: 'divider',
-            display: 'flex',
-            justifyContent: 'center',
-            gap: { xs: 1, sm: 2 },
-            zIndex: 1000,
-            boxShadow: 'none'
-          }}
-        >
-          <IconButton
-            sx={{ 
-              width: { xs: 48, sm: 56 },
-              height: { xs: 48, sm: 56 },
-              bgcolor: isListening ? 'secondary.main' : '#4CAF50',
-              color: 'white',
-              '&:hover': {
-                bgcolor: isListening ? 'secondary.dark' : '#45a049',
-              }
-            }}
-            onClick={toggleListening}
-          >
-            {isListening ? <MicIcon /> : <MicOffIcon />}
-          </IconButton>
-
-          <IconButton 
-            onClick={handleSkip}
-            disabled={gameState !== 'playing' || !isInitializedRef.current}
-            sx={{ 
-              width: { xs: 48, sm: 56 },
-              height: { xs: 48, sm: 56 },
-              backgroundColor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              },
-              '&.Mui-disabled': {
-                backgroundColor: 'action.disabledBackground',
-                color: 'action.disabled'
-              }
-            }}
-          >
-            <SkipNextIcon />
-          </IconButton>
-
-          <IconButton 
-            onClick={fetchWords}
-            sx={{ 
-              width: { xs: 48, sm: 56 },
-              height: { xs: 48, sm: 56 },
-              backgroundColor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              }
-            }}
-          >
-            <RefreshIcon />
-          </IconButton>
-
-          <IconButton 
-            onClick={handleClose}
-            sx={{ 
-              width: { xs: 48, sm: 56 },
-              height: { xs: 48, sm: 56 },
-              backgroundColor: 'error.main',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'error.dark',
-              }
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-
-        <Snackbar
-          open={showInactiveWarning}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert 
-            severity="warning" 
-            onClose={() => setShowInactiveWarning(false)}
-            sx={{ width: '100%' }}
-          >
-            Please start speaking! The game will end in a few seconds if no speech is detected.
-          </Alert>
-        </Snackbar>
-
-        <Snackbar
-          open={!!errorToast}
-          autoHideDuration={6000}
-          onClose={() => setErrorToast(null)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          sx={{ zIndex: 9999 }}
-        >
-          <Alert 
-            onClose={() => setErrorToast(null)} 
-            severity="error"
-            sx={{ width: '100%' }}
-          >
-            {errorToast}
-          </Alert>
-        </Snackbar>
-      </Box>
-    </>
-  );
+  return null;
 }
 
 export default LinguaSlide; 

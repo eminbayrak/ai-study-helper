@@ -1,81 +1,44 @@
-import { AppBar, IconButton, Toolbar, Typography } from '@mui/material';
-import { List, X } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { Button } from "./ui/button";
+import { Settings, Crown, Info, Bell, User } from "lucide-react";
+import { cn } from "../lib/utils";
 
 interface NavbarProps {
-  onMenuClick: () => void;
+  onMenuClick?: () => void;
 }
 
 function Navbar({ onMenuClick }: NavbarProps) {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleMenuClick = () => {
-    setIsOpen(!isOpen);
-    onMenuClick();
-  };
-
   return (
-    <AppBar 
-      position="fixed"
-      className={isScrolled ? 'navbar-blur' : ''}
-      sx={{
-        background: isScrolled 
-          ? 'rgba(15, 23, 42, 0.7)'
-          : 'transparent',
-        boxShadow: 'none',
-        transition: 'all 0.3s ease-in-out',
-        borderBottom: isScrolled ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-        '@media (prefers-color-scheme: light)': {
-          background: isScrolled 
-            ? 'rgba(248, 250, 252, 0.7)'
-            : 'transparent',
-          borderBottom: isScrolled ? '1px solid rgba(0, 0, 0, 0.1)' : 'none',
-        }
-      }}
-    >
-      <Toolbar>
-        <IconButton
-          color="inherit"
-          edge="start"
-          onClick={handleMenuClick}
-          sx={{ 
-            mr: 2,
-            '& svg': {
-              width: 24,
-              height: 24,
-              transition: 'transform 0.3s ease'
-            }
-          }}
-        >
-          {isOpen ? (
-            <X weight="bold" />
-          ) : (
-            <List weight="bold" />
-          )}
-        </IconButton>
-        <Typography 
-          variant="h6" 
-          noWrap 
-          component="div"
-          sx={{ 
-            fontWeight: 600,
-            letterSpacing: '-0.02em'
-          }}
-        >
-          EduLingo
-        </Typography>
-      </Toolbar>
-    </AppBar>
+    <nav className="fixed top-0 left-0 right-0 h-12 flex items-center justify-between px-4 bg-background/50 backdrop-blur-sm border-b border-border/40 z-50">
+      <div className="flex items-center space-x-4">
+        {/* Logo */}
+        <div className="text-lg font-semibold tracking-tight">
+          lingua<span className="text-primary">slide</span>
+        </div>
+        
+        {/* Left side icons */}
+        <div className="hidden md:flex items-center space-x-1">
+          <Button variant="ghost" size="icon" className="w-9 h-9">
+            <Crown className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="w-9 h-9">
+            <Info className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Right side icons */}
+      <div className="flex items-center space-x-1">
+        <Button variant="ghost" size="icon" className="w-9 h-9">
+          <Bell className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="w-9 h-9">
+          <Settings className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="w-9 h-9">
+          <User className="h-4 w-4" />
+        </Button>
+      </div>
+    </nav>
   );
 }
 

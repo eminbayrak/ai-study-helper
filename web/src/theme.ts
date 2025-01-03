@@ -16,7 +16,7 @@ export const getTheme = (mode: 'light' | 'dark') => createTheme({
         main: '#34D399', // dark mode secondary
       },
       background: {
-        default: '#0F172A', // dark background
+        default: '#323437', // dark background
         paper: '#1E293B',  // dark surface
       },
       text: {

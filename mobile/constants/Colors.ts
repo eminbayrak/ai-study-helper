@@ -27,7 +27,6 @@ const Colors = {
   dark: {
     primary: '#FF6B81',
     secondary: '#34D399',
-    background: '#0F172A',
     surface: '#1E293B',
     text: '#F8FAFC',
     textSecondary: '#94A3B8',
