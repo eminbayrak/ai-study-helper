@@ -16,7 +16,7 @@ const themes = [
     colors: {
       bg: '#323437',
       main: '#e2b714',
-      sub: '#646669',
+      sub: '#4a4a4a',
       text: '#d1d0c5',
       error: '#ca4754',
       success: '#4CAF50'
@@ -27,11 +27,11 @@ const themes = [
     name: 'Light',
     colors: {
       bg: '#ffffff',
-      main: '#4CAF50',
-      sub: '#9e9e9e',
+      main: '#2E7D32',
+      sub: '#757575',
       text: '#2c2c2c',
-      error: '#f44336',
-      success: '#4CAF50'
+      error: '#d32f2f',
+      success: '#2E7D32'
     }
   },
   {
@@ -39,11 +39,11 @@ const themes = [
     name: 'Sepia',
     colors: {
       bg: '#f4ecd8',
-      main: '#a0522d',
-      sub: '#8b7355',
-      text: '#5c4033',
-      error: '#cd5c5c',
-      success: '#228b22'
+      main: '#8b4513',
+      sub: '#6b5744',
+      text: '#433022',
+      error: '#b22222',
+      success: '#2e5014'
     }
   },
   {
@@ -51,11 +51,11 @@ const themes = [
     name: 'Lavender',
     colors: {
       bg: '#f5f5ff',
-      main: '#9d8ec7',
-      sub: '#a5a5cc',
-      text: '#4a4a6a',
-      error: '#ff6b6b',
-      success: '#7cb342'
+      main: '#7b6ca6',
+      sub: '#6c6c99',
+      text: '#2d2d4d',
+      error: '#d63939',
+      success: '#3d691d'
     }
   },
   {
@@ -63,11 +63,11 @@ const themes = [
     name: 'Mint',
     colors: {
       bg: '#f5fffa',
-      main: '#66cdaa',
-      sub: '#a3d9c9',
-      text: '#2f4f4f',
-      error: '#ff6b6b',
-      success: '#3cb371'
+      main: '#2b8c6f',
+      sub: '#5c8c83',
+      text: '#1a3b3b',
+      error: '#d63939',
+      success: '#2b754c'
     }
   },
   {
@@ -75,7 +75,7 @@ const themes = [
     name: 'Solarized',
     colors: {
       bg: '#002b36',
-      main: '#b58900',
+      main: '#cb4b16',
       sub: '#586e75',
       text: '#93a1a1',
       error: '#dc322f',
@@ -88,10 +88,22 @@ const themes = [
     colors: {
       bg: '#1b1e28',
       main: '#a6da95',
-      sub: '#383e4c',
+      sub: '#4f5873',
       text: '#e4f0fb',
       error: '#d0679d',
       success: '#5de4c7'
+    }
+  },
+  {
+    id: 'hellokitty',
+    name: 'Hello Kitty',
+    colors: {
+      bg: '#ffffff',
+      main: '#ff66aa',
+      sub: '#ffb7d5',
+      text: '#4f4f4f',
+      error: '#ff4477',
+      success: '#66cdaa'
     }
   }
 ];

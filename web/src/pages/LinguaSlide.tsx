@@ -713,18 +713,15 @@ function LinguaSlide() {
       return word;
     });
 
-    // Update both the ref and state
     wordListRef.current = updatedWordList;
     setWordList(updatedWordList);
     setProgress(((currentWord.order ?? 0) + 1) * 10);
 
-    // Check if all words are completed
     if (updatedWordList.every(w => w.completed)) {
       setTimeout(() => endGame(), 500);
     }
 
     setTimeout(() => scrollToActiveWord(currentWord.order + 1), 100);
-    showToast('Word skipped', 'warning');
   };
 
   // Update close button handler
@@ -1016,8 +1013,16 @@ function LinguaSlide() {
         </div>
 
         {/* Current Word */}
-        <div className="w-full max-w-2xl mx-auto p-3 mb-4 rounded"
-          style={{ backgroundColor: currentTheme.colors.sub }}
+        <div 
+          className="w-full max-w-2xl mx-auto p-3 mb-4 rounded"
+          style={{ 
+            backgroundColor: currentTheme.id.includes('light') || 
+                            currentTheme.id === 'sepia' || 
+                            currentTheme.id === 'lavender' || 
+                            currentTheme.id === 'mint'
+              ? `${currentTheme.colors.sub}30`
+              : currentTheme.colors.sub
+          }}
         >
           <div className="text-center">
             <span className="text-2xl font-light tracking-wide">
@@ -1036,7 +1041,14 @@ function LinguaSlide() {
                   id={`word-${index}`}
                   className="p-2 rounded transition-all flex items-center"
                   style={{
-                    backgroundColor: item.unlocked && !item.completed ? currentTheme.colors.sub : 'transparent',
+                    backgroundColor: item.unlocked && !item.completed 
+                      ? (currentTheme.id.includes('light') || 
+                         currentTheme.id === 'sepia' || 
+                         currentTheme.id === 'lavender' || 
+                         currentTheme.id === 'mint'
+                           ? `${currentTheme.colors.sub}30`  // More transparent for light themes
+                           : currentTheme.colors.sub)        // Keep original for dark themes
+                      : 'transparent',
                     opacity: !item.unlocked ? 0.4 : 1,
                     color: item.completed ? 
                       (item.hadIncorrectAttempt || item.skipped ? currentTheme.colors.main : currentTheme.colors.success) 
@@ -1096,8 +1108,15 @@ function LinguaSlide() {
               className="h-10 w-10 rounded border"
               style={{
                 borderColor: currentTheme.colors.sub,
-                color: isListening ? currentTheme.colors.main : currentTheme.colors.text,
-                backgroundColor: isListening ? currentTheme.colors.sub : 'transparent'
+                color: isListening ? currentTheme.colors.success : currentTheme.colors.text,
+                backgroundColor: isListening 
+                  ? (currentTheme.id.includes('light') || 
+                     currentTheme.id === 'sepia' || 
+                     currentTheme.id === 'lavender' || 
+                     currentTheme.id === 'mint'
+                       ? `${currentTheme.colors.sub}30`
+                       : currentTheme.colors.sub)
+                  : 'transparent'
               }}
               onClick={toggleListening}
             >
@@ -1183,7 +1202,14 @@ function LinguaSlide() {
                         <div
                           key={index}
                           className="flex items-center justify-between p-2 rounded"
-                          style={{ backgroundColor: currentTheme.colors.sub }}
+                          style={{ 
+                            backgroundColor: currentTheme.id.includes('light') || 
+                                            currentTheme.id === 'sepia' || 
+                                            currentTheme.id === 'lavender' || 
+                                            currentTheme.id === 'mint' 
+                              ? `${currentTheme.colors.sub}30`  // More transparent for light themes
+                              : currentTheme.colors.sub         // Keep original for dark themes
+                          }}
                         >
                           <div className="flex items-center space-x-2">
                             <Button
