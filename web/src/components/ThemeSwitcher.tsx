@@ -8,7 +8,7 @@ import {
 } from "./ui/dropdown-menu";
 import { useTheme } from "../contexts/ThemeContext";
 
-export function ThemeSwitcher() {
+export default function ThemeSwitcher() {
   const { currentTheme, setTheme, themes } = useTheme();
 
   return (
@@ -17,9 +17,13 @@ export function ThemeSwitcher() {
         <Button
           variant="ghost"
           size="icon"
-          className="w-9 h-9 hover:bg-[#2c2c2c]"
+          className="relative"
         >
           <Palette className="h-4 w-4" />
+          <div 
+            className="absolute w-2 h-2 rounded-full right-2 bottom-2"
+            style={{ backgroundColor: currentTheme.colors.main }}
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
