@@ -1,5 +1,5 @@
 @font-face {
-  font-family: 'CustomFont';
+  font-family: 'CustomMono';
   src: url('/src/assets/font.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
@@ -11,34 +11,6 @@
 
 @layer base {
   :root {
-    --background: 224 36% 15%;
-    --foreground: 0 0% 98%;
-    
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    
-    --primary: 45 93% 47%;  /* Monkeytype yellow #e2b714 */
-    --primary-foreground: 0 0% 9%;
-    
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    
-    --border: 223 7% 20%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-
     --radius: 0.5rem;
   }
 }
@@ -47,9 +19,13 @@
   * {
     @apply border-border;
   }
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+  }
+  
   body {
-    @apply bg-[#323437] text-[#d1d0c5];
-    font-family: 'CustomFont', monospace;
+    font-family: 'CustomMono', monospace;
   }
 }
 

@@ -18,6 +18,9 @@ import {
   ToggleGroupItem,
 } from "../components/ui/toggle-group";
 import { cn } from "../lib/utils";
+import { useTheme } from '../contexts/ThemeContext';
+import { Toaster } from "../components/ui/toaster";
+import { toast } from "../hooks/use-toast";
 
 // Assets
 const successSound = 'https://assets.mixkit.co/active_storage/sfx/2018/success-1-6297.wav';
@@ -67,7 +70,23 @@ const isSpeechRecognitionSupported = () => {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 };
 
+// Replace showToast with direct toast calls
+const showToast = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+  toast({
+    variant: type === 'error' ? 'destructive' : 'default',
+    title: type.charAt(0).toUpperCase() + type.slice(1),
+    description: message,
+    duration: 3000,
+    className: "border-none",
+    style: {
+      backgroundColor: currentTheme.colors.sub,
+      color: currentTheme.colors.text,
+    },
+  });
+};
+
 function LinguaSlide() {
+  const { currentTheme } = useTheme();
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [isListening, setIsListening] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -656,6 +675,7 @@ function LinguaSlide() {
     }
 
     setTimeout(() => scrollToActiveWord(currentWord.order + 1), 100);
+    showToast('Word skipped', 'warning');
   };
 
   // Update close button handler
@@ -682,15 +702,26 @@ function LinguaSlide() {
   useEffect(() => {
     if (gameState !== 'playing' || !isInitializedRef.current || isLoading || hasSpokenOnce) return;
 
+    let hasShownWarning = false;
+
     const inactivityCheck = setInterval(() => {
       const timeSinceLastSpoken = Date.now() - lastSpokenTimestamp;
       
-      // Show warning at 10 seconds of inactivity
-      if (timeSinceLastSpoken >= 10000) {
+      if (timeSinceLastSpoken >= 10000 && !hasShownWarning) {
         setShowInactiveWarning(true);
+        hasShownWarning = true;
+        toast({
+          title: "Warning",
+          description: "Please start speaking to continue the game",
+          variant: "destructive",
+          className: "border-none",
+          style: {
+            backgroundColor: currentTheme.colors.sub,
+            color: currentTheme.colors.text,
+          },
+        });
       }
       
-      // End game at 20 seconds of inactivity
       if (timeSinceLastSpoken >= 20000) {
         clearInterval(inactivityCheck);
         endGameDueToInactivity();
@@ -698,11 +729,10 @@ function LinguaSlide() {
     }, 1000);
 
     return () => clearInterval(inactivityCheck);
-  }, [gameState, isInitializedRef.current, lastSpokenTimestamp, isLoading, hasSpokenOnce]); // Add hasSpokenOnce dependency
+  }, [gameState, isInitializedRef.current, lastSpokenTimestamp, isLoading, hasSpokenOnce]);
 
-  // Add this function to handle inactivity game end
+  // Update endGameDueToInactivity toast
   const endGameDueToInactivity = () => {
-    // Mark all unlocked words as skipped due to inactivity
     const updatedWordList = wordListRef.current.map(word => {
       if (word.unlocked) {
         return {
@@ -710,7 +740,7 @@ function LinguaSlide() {
           completed: true,
           skipped: true,
           attempts: 1,
-          inactivitySkip: true // Add this flag to indicate inactivity skip
+          inactivitySkip: true
         };
       }
       return word;
@@ -718,6 +748,17 @@ function LinguaSlide() {
     
     wordListRef.current = updatedWordList;
     setWordList(updatedWordList);
+    
+    toast({
+      title: "Session Ended",
+      description: "Your session has ended due to inactivity",
+      variant: "destructive",
+      className: "border-none",
+      style: {
+        backgroundColor: currentTheme.colors.sub,
+        color: currentTheme.colors.text,
+      },
+    });
     
     endGame();
   };
@@ -749,31 +790,74 @@ function LinguaSlide() {
     }
   }, [gameState, isLoading]);
 
+  // Example of using theme colors in inline styles
+  const commonStyles = {
+    color: currentTheme.colors.text,
+  };
+
+  const subTextStyles = {
+    color: currentTheme.colors.sub,
+  };
+
+  // Update error handling
+  useEffect(() => {
+    if (errorToast) {
+      showToast(errorToast, 'error');
+      setErrorToast(null);
+    }
+  }, [errorToast]);
+
+  useEffect(() => {
+    if (apiError) {
+      showToast(apiError, 'error');
+      setApiError(null);
+    }
+  }, [apiError]);
+
+  // Add success notifications
+  const handleSuccess = (message: string) => {
+    showToast(message, 'success');
+  };
+
   // Ready State UI
   if (gameState === 'ready') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 -mt-32 bg-[#323437] text-[#d1d0c5] font-custom">
+      <div 
+        className="min-h-[calc(100vh-3rem)] flex flex-col items-center justify-center p-4" 
+        style={{ color: currentTheme.colors.text }}
+      >
         <div className="w-full max-w-2xl space-y-12">
-          {/* Title */}
           <div className="text-center space-y-2">
             <h1 className="text-5xl font-light tracking-wider">
-              lingua<span className="text-[#e2b714]">slide</span>
+              lingua<span style={{ color: currentTheme.colors.main }}>slide</span>
             </h1>
-            <div className="inline-flex items-center px-2 py-1 rounded bg-[#2c2c2c] text-[#646669] text-xs font-medium">
-              BETA
+            <div 
+              className="inline-flex items-center px-2 py-1 rounded text-xs font-light"
+              style={{ backgroundColor: currentTheme.colors.bg, color: currentTheme.colors.sub }}
+          >
+            BETA
             </div>
           </div>
 
           {/* Device Warning */}
           {isMobileBrowser() && (
-            <div className="bg-[#2c2c2c] p-4 rounded text-sm text-[#e2b714]">
+            <div 
+              className="p-4 rounded text-sm"
+              style={{ 
+                color: currentTheme.colors.main,
+                opacity: 0.8
+              }}
+            >
               For the best experience, please use a desktop browser with Chrome.
             </div>
           )}
 
           {/* Difficulty Selection */}
           <div className="space-y-8">
-            <h2 className="text-lg font-light text-center text-[#646669]">
+            <h2 
+              className="text-lg font-light text-center"
+              style={{ color: currentTheme.colors.sub }}
+            >
               Select Difficulty
             </h2>
 
@@ -783,15 +867,35 @@ function LinguaSlide() {
               onValueChange={(value) => value && setDifficulty(value as Difficulty)}
               className="justify-center"
             >
-              <ToggleGroupItem value="easy" className="data-[state=on]:bg-[#e2b714] data-[state=on]:text-[#323437]">Easy</ToggleGroupItem>
-              <ToggleGroupItem value="medium" className="data-[state=on]:bg-[#e2b714] data-[state=on]:text-[#323437]">Medium</ToggleGroupItem>
-              <ToggleGroupItem value="hard" className="data-[state=on]:bg-[#e2b714] data-[state=on]:text-[#323437]">Hard</ToggleGroupItem>
+              {['easy', 'medium', 'hard'].map((level) => (
+                <ToggleGroupItem 
+                  key={level}
+                  value={level}
+                  className="capitalize text-sm"
+                  style={{
+                    backgroundColor: difficulty === level ? currentTheme.colors.main : 'transparent',
+                    color: difficulty === level ? currentTheme.colors.bg : currentTheme.colors.sub,
+                    border: `1px solid ${currentTheme.colors.sub}`,
+                    opacity: difficulty === level ? 1 : 0.6
+                  }}
+                >
+                  {level}
+                </ToggleGroupItem>
+              ))}
             </ToggleGroup>
 
             {/* Best Practices */}
-            <div className="bg-[#2c2c2c] p-4 rounded">
-              <h3 className="font-medium text-[#e2b714] mb-2">📢 For Best Results</h3>
-              <ul className="text-sm text-[#646669] space-y-1">
+            <div className="space-y-2">
+              <h3 
+                className="font-medium"
+                style={{ color: currentTheme.colors.main }}
+              >
+                📢 For Best Results
+              </h3>
+              <ul 
+                className="text-sm space-y-1"
+                style={{ color: currentTheme.colors.sub }}
+              >
                 <li>• Position microphone close to mouth (4-6 inches)</li>
                 <li>• Speak clearly at a normal pace</li>
                 <li>• Minimize background noise</li>
@@ -803,18 +907,25 @@ function LinguaSlide() {
             <div className="flex flex-col items-center gap-6">
               <Button
                 size="lg"
-                className="w-24 h-24 rounded-full bg-[#e2b714] hover:bg-[#e2b714]/90 text-[#323437]"
-                onClick={startGame}
-                disabled={isStarting}
-              >
-                {isStarting ? (
+                style={{
+                  backgroundColor: currentTheme.colors.main,
+                  color: currentTheme.colors.bg,
+                }}
+                className="w-24 h-24 rounded-full hover:opacity-90"
+              onClick={startGame}
+              disabled={isStarting}
+            >
+              {isStarting ? (
                   <RefreshCw className="h-8 w-8 animate-spin" />
                 ) : (
                   <Play className="h-8 w-8" />
                 )}
               </Button>
 
-              <p className="text-sm text-[#646669]">
+              <p 
+                className="text-sm"
+                style={{ color: currentTheme.colors.sub }}
+              >
                 Practice pronunciation with {DIFFICULTY_TIME_LIMITS[difficulty]} seconds timer
               </p>
             </div>
@@ -827,114 +938,166 @@ function LinguaSlide() {
   // Playing State UI
   if (gameState === 'playing') {
     return (
-      <div className="min-h-screen flex flex-col p-4 pt-8 bg-[#323437] text-[#d1d0c5] font-custom">
+      <div 
+        className="min-h-[calc(100vh-3rem)] flex flex-col p-4" 
+        style={{ color: currentTheme.colors.text }}
+      >
         {/* Timer and Progress */}
-        <div className="w-full max-w-2xl mx-auto mb-8">
+        <div className="w-full max-w-2xl mx-auto mb-4">
           <div className="flex justify-between items-center mb-2">
-            <span className={cn(
-              "text-2xl font-light text-[#646669]",
-              timeLeft <= 10 && "text-[#e2b714]"
-            )}>
+            <span 
+              style={{ 
+                color: timeLeft <= 10 ? currentTheme.colors.main : currentTheme.colors.sub 
+              }}
+              className="text-xl font-light"
+            >
               {timeLeft}s
             </span>
-            <span className="text-sm font-light text-[#646669]">
+            <span 
+              style={{ color: currentTheme.colors.sub }} 
+              className="text-xs font-light"
+            >
               {progress}%
             </span>
           </div>
           <Progress 
             value={progress} 
-            className="h-0.5 bg-[#2c2c2c]" 
+            className="h-0.5"
+            style={{ 
+              backgroundColor: `${currentTheme.colors.sub}40`,
+              ['--progress-color' as string]: currentTheme.colors.main,
+            }}
           />
         </div>
 
-        {/* Word List */}
-        <div className="w-full max-w-2xl mx-auto flex-1 space-y-1">
-          {wordList.map((item, index) => (
-            <div
-              key={index}
-              id={`word-${index}`}
-              className={cn(
-                "p-3 rounded transition-all flex items-center",
-                item.unlocked && !item.completed && "bg-[#2c2c2c]",
-                !item.unlocked && "opacity-40",
-                item.completed && !item.hadIncorrectAttempt && !item.skipped && "text-[#4CAF50]",
-                (item.hadIncorrectAttempt || item.skipped) && "text-[#e2b714]"
-              )}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 hover:bg-[#3a3a3a] text-[#646669] hover:text-[#d1d0c5] mr-2"
-                onClick={() => speak(item.word)}
-              >
-                <Volume2 className="h-4 w-4" />
-              </Button>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl font-light tracking-wide">{item.word}</span>
-                  <span className="text-sm font-light text-[#646669] tracking-wider">
-                    {item.phonetic}
-                  </span>
-                </div>
-              </div>
+        {/* Current Word */}
+        <div className="w-full max-w-2xl mx-auto p-3 mb-4 rounded"
+          style={{ backgroundColor: currentTheme.colors.sub }}
+        >
+          <div className="text-center">
+            <span className="text-2xl font-light tracking-wide">
+              {wordList.find(w => w.unlocked && !w.completed)?.word || ''}
+            </span>
+          </div>
+        </div>
 
-              {item.completed && (
-                item.skipped ? (
-                  <X className="h-4 w-4 text-[#e2b714] ml-2" />
-                ) : (
-                  <Star className="h-4 w-4 text-[#4CAF50] ml-2" />
-                )
-              )}
+        {/* Word List */}
+        <div className="w-full max-w-2xl mx-auto flex-1 overflow-hidden">
+          <div className="h-full flex flex-col">
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {wordList.map((item, index) => (
+                <div
+                  key={index}
+                  id={`word-${index}`}
+                  className="p-2 rounded transition-all flex items-center"
+                  style={{
+                    backgroundColor: item.unlocked && !item.completed ? currentTheme.colors.sub : 'transparent',
+                    opacity: !item.unlocked ? 0.4 : 1,
+                    color: item.completed ? 
+                      (item.hadIncorrectAttempt || item.skipped ? currentTheme.colors.main : currentTheme.colors.success) 
+                      : currentTheme.colors.text
+                  }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 mr-2"
+                    style={{
+                      color: currentTheme.colors.text,
+                      opacity: 0.7,
+                      '&:hover': { opacity: 1 }
+                    }}
+                    onClick={() => speak(item.word)}
+                  >
+                    <Volume2 className="h-3 w-3" />
+                  </Button>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-light tracking-wide">{item.word}</span>
+                      <span 
+                        style={{ color: currentTheme.colors.text }} 
+                        className="text-xs font-light tracking-wider opacity-60"
+                      >
+                        {item.phonetic}
+                      </span>
+                    </div>
+                  </div>
+
+                  {item.completed && (
+                    item.skipped ? (
+                      <X className="h-3 w-3 ml-2" style={{ color: currentTheme.colors.main }} />
+                    ) : (
+                      <Star className="h-3 w-3 ml-2" style={{ color: currentTheme.colors.success }} />
+                    )
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
 
         {/* Control Buttons */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#323437]/90 backdrop-blur-sm border-t border-[#2c2c2c]">
+        <div 
+          className="fixed bottom-0 left-0 right-0 p-3 backdrop-blur-sm border-t"
+          style={{ 
+            backgroundColor: `${currentTheme.colors.bg}90`,
+            borderColor: currentTheme.colors.sub 
+          }}
+        >
           <div className="flex justify-center gap-2 max-w-2xl mx-auto">
             <Button
               size="lg"
               variant="ghost"
-              className={cn(
-                "h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c]",
-                isListening && "bg-[#2c2c2c] text-[#e2b714]"
-              )}
+              className="h-10 w-10 rounded border"
+              style={{
+                borderColor: currentTheme.colors.sub,
+                color: isListening ? currentTheme.colors.main : currentTheme.colors.text,
+                backgroundColor: isListening ? currentTheme.colors.sub : 'transparent'
+              }}
               onClick={toggleListening}
             >
-              {isListening ? (
-                <Mic className="h-4 w-4" />
-              ) : (
-                <MicOff className="h-4 w-4" />
-              )}
+              {isListening ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
             </Button>
 
             <Button
               size="lg"
               variant="ghost"
-              className="h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c]"
+              className="h-10 w-10 rounded border"
+              style={{
+                borderColor: currentTheme.colors.sub,
+                color: currentTheme.colors.text,
+              }}
               onClick={handleSkip}
               disabled={gameState !== 'playing'}
             >
-              <SkipForward className="h-4 w-4" />
+              <SkipForward className="h-3.5 w-3.5" />
             </Button>
 
             <Button
               size="lg"
               variant="ghost"
-              className="h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c]"
+              className="h-10 w-10 rounded border"
+              style={{
+                borderColor: currentTheme.colors.sub,
+                color: currentTheme.colors.text,
+              }}
               onClick={fetchWords}
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
             </Button>
 
             <Button
               size="lg"
               variant="ghost"
-              className="h-12 w-12 rounded hover:bg-[#2c2c2c] border border-[#2c2c2c] text-[#f44336]"
+              className="h-10 w-10 rounded border"
+              style={{
+                borderColor: currentTheme.colors.sub,
+                color: currentTheme.colors.error,
+              }}
               onClick={handleClose}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -945,65 +1108,97 @@ function LinguaSlide() {
   // Results State UI
   if (gameState === 'finished' && gameResult) {
     return (
-      <div className="min-h-screen flex flex-col items-center p-4 -mt-12 bg-[#323437] text-[#d1d0c5] font-custom">
+      <div 
+        className="min-h-[calc(100vh-3rem)] flex flex-col items-center p-4" 
+        style={{ color: currentTheme.colors.text }}
+      >
         <div className="w-full max-w-2xl flex flex-col min-h-screen">
-          {/* Header - Reduced top padding */}
-          <div className="pt-4 pb-6">
-            <h2 className="text-4xl font-light text-center tracking-wider">Practice Summary</h2>
+          {/* Sticky Header */}
+          <div 
+            className="sticky top-0 z-10 pt-2 pb-4 -mx-4 px-4"
+            style={{ backgroundColor: currentTheme.colors.bg }}
+          >
+            <h2 className="text-2xl font-light text-center tracking-wider">Practice Summary</h2>
           </div>
 
-          {/* Content - with max height and reduced spacing */}
+          {/* Content with smaller fonts */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {wordList.some(w => w.skipped || w.hadIncorrectAttempt) ? (
               <>
-                <h3 className="text-xl font-light text-[#646669] mb-3">Words to Practice:</h3>
-                {/* Scrollable container */}
+                <h3 
+                  className="text-base font-light mb-3"
+                  style={{ color: currentTheme.colors.sub }}
+                >
+                Words to Practice:
+                </h3>
                 <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2">
                   <div className="space-y-1">
-                    {wordList
-                      .filter(w => w.skipped || w.hadIncorrectAttempt)
+                {wordList
+                  .filter(w => w.skipped || w.hadIncorrectAttempt)
                       .map((word, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-3 rounded bg-[#2c2c2c]"
+                          className="flex items-center justify-between p-2 rounded"
+                          style={{ backgroundColor: currentTheme.colors.sub }}
                         >
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 shrink-0 hover:bg-[#3a3a3a] text-[#646669] hover:text-[#d1d0c5]"
-                              onClick={() => speak(word.word)}
+                              className="h-7 w-7 shrink-0"
+                              style={{
+                                color: currentTheme.colors.text,
+                                '&:hover': { opacity: 0.8 }
+                              }}
+                          onClick={() => speak(word.word)}
                             >
-                              <Volume2 className="h-4 w-4" />
+                              <Volume2 className="h-3.5 w-3.5" />
                             </Button>
-                            <span className="text-xl font-light tracking-wide">{word.word}</span>
-                            {word.skipped && (
-                              <span className="text-sm font-light text-[#646669] italic tracking-wider">
-                                (skipped)
+                            <span className="text-base font-light tracking-wide">
+                          {word.word}
+                            </span>
+                          {word.skipped && (
+                              <span 
+                                className="text-xs font-light italic tracking-wider"
+                                style={{ color: currentTheme.colors.text }}
+                            >
+                              (skipped)
                               </span>
-                            )}
-                            {!word.skipped && word.spokenWord && (
-                              <span className="text-sm font-light text-[#646669] italic tracking-wider truncate">
-                                (you said: {word.spokenWord})
+                          )}
+                          {!word.skipped && word.spokenWord && (
+                              <span 
+                                className="text-xs font-light italic tracking-wider truncate"
+                                style={{ color: currentTheme.colors.text }}
+                            >
+                              (you said: {word.spokenWord})
                               </span>
                             )}
                           </div>
-                          <span className="text-sm font-light text-[#646669] shrink-0 ml-2">
-                            {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
+                          <span 
+                            className="text-xs font-light shrink-0 ml-2"
+                            style={{ color: currentTheme.colors.text }}
+                      >
+                        {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
                           </span>
                         </div>
-                      ))}
+                  ))}
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center -mt-20">
-                <div className="text-center space-y-6">
-                  <Star className="h-24 w-24 text-[#e2b714] mx-auto" />
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-light">Perfect Pronunciation!</h3>
-                    <p className="text-[#646669]">
-                      Amazing job! You nailed every word.
+            </>
+          ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <Star 
+                    className="h-16 w-16 mx-auto" 
+                    style={{ color: currentTheme.colors.main }}
+                  />
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-light">Perfect Pronunciation!</h3>
+                    <p 
+                      className="text-sm"
+                      style={{ color: currentTheme.colors.sub }}
+                    >
+                Amazing job! You nailed every word.
                     </p>
                   </div>
                 </div>
@@ -1011,26 +1206,38 @@ function LinguaSlide() {
             )}
           </div>
 
-          {/* Footer - Always visible with reduced padding */}
-          <div className="sticky bottom-0 pt-3 pb-2 bg-[#323437]">
-            <Button
+          {/* Footer */}
+          <div 
+            className="sticky bottom-0 pt-3 pb-2"
+            style={{ backgroundColor: currentTheme.colors.bg }}
+          >
+        <Button
               size="lg"
-              onClick={() => {
-                setGameState('ready');
-                setGameResult(null);
+          onClick={() => {
+            setGameState('ready');
+            setGameResult(null);
+          }}
+              className="w-full h-10 text-sm font-light tracking-wider"
+              style={{
+                backgroundColor: currentTheme.colors.main,
+                color: currentTheme.colors.bg,
               }}
-              className="w-full h-12 bg-[#e2b714] hover:bg-[#e2b714]/90 text-[#323437] font-light tracking-wider"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
+          Try Again
+        </Button>
           </div>
         </div>
       </div>
     );
   }
 
-  return null;
+  return (
+    <>
+      {/* Your existing UI code */}
+      <Toaster />
+    </>
+  );
 }
 
 export default LinguaSlide; 

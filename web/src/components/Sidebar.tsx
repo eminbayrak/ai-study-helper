@@ -16,43 +16,17 @@ interface SidebarProps {
 }
 
 function Sidebar({ open, onClose }: SidebarProps) {
-  const navigate = useNavigate();
-
-  const menuItems = [
-    { text: 'Home', icon: <HomeIcon />, path: '/' },
-    { text: 'Lingua Slide', icon: <SchoolIcon />, path: '/linguaslide' },
-  ];
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    onClose();
-  };
+  if (!open) return null;
 
   return (
-    <Drawer
-      anchor="left"
-      open={open}
-      onClose={onClose}
-      sx={{
-        width: 240,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: 240,
-          boxSizing: 'border-box',
-        },
-      }}
-    >
-      <List sx={{ mt: 8 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton onClick={() => handleNavigation(item.path)}>
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Drawer>
+    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
+      <div 
+        className="fixed left-0 top-0 h-full w-64 bg-[#323437] p-4"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Sidebar content */}
+      </div>
+    </div>
   );
 }
 

@@ -1,53 +1,39 @@
-import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Box, CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
 import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
 import LinguaSlide from './pages/LinguaSlide';
-import { getTheme } from './theme';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { CustomThemeProvider } from './contexts/ThemeContext';
+import { useTheme } from './contexts/ThemeContext';
+import { Toaster } from './components/ui/toaster';
 
-function App() {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const [mode, setMode] = useState<'light' | 'dark'>(prefersDarkMode ? 'dark' : 'light');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  useEffect(() => {
-    setMode(prefersDarkMode ? 'dark' : 'light');
-  }, [prefersDarkMode]);
-
-  const theme = getTheme(mode);
+function AppContent() {
+  const { currentTheme } = useTheme();
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
+    <div 
+      className="min-h-screen w-full fixed inset-0"
+      style={{ backgroundColor: currentTheme.colors.bg }}
+    >
+      <Navbar />
+      <main className="w-full h-full overflow-auto pt-12">
         <SpeedInsights />
-        <Box sx={{ display: 'flex' }}>
-          <Navbar onMenuClick={toggleSidebar} />
-          <Sidebar open={sidebarOpen} onClose={toggleSidebar} />
-          <Box
-            component="main"
-            sx={{
-              flexGrow: 1,
-              p: 3,
-              mt: 8,
-              backgroundColor: 'background.default',
-              minHeight: '50vh',
-            }}
-          >
-            <Routes>
-              <Route path="/" element={<Navigate to="/linguaslide" replace />} />
-              <Route path="/linguaslide" element={<LinguaSlide />} />
-            </Routes>
-          </Box>
-        </Box>
+        <Routes>
+          <Route path="/" element={<Navigate to="/linguaslide" replace />} />
+          <Route path="/linguaslide" element={<LinguaSlide />} />
+        </Routes>
+      </main>
+      <Toaster />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <CustomThemeProvider>
+      <BrowserRouter>
+        <AppContent />
       </BrowserRouter>
-    </ThemeProvider>
+    </CustomThemeProvider>
   );
 }
 

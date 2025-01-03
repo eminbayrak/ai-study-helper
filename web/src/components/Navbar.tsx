@@ -1,6 +1,7 @@
 import { Button } from "./ui/button";
 import { Settings, Crown, Info, Bell, User } from "lucide-react";
 import { cn } from "../lib/utils";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -28,6 +29,7 @@ function Navbar({ onMenuClick }: NavbarProps) {
 
       {/* Right side icons */}
       <div className="flex items-center space-x-1">
+        <ThemeSwitcher />
         <Button variant="ghost" size="icon" className="w-9 h-9 hover:bg-[#2c2c2c]">
           <Bell className="h-4 w-4" />
         </Button>
