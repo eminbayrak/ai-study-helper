@@ -82,6 +82,7 @@ const themes = [
             bg: '#f4ecd8',
             main: '#8b4513',
             sub: '#6b5744',
+            card: '#e8dcc8',
             text: '#433022',
             error: '#b22222',
             success: '#2e5014'
@@ -94,6 +95,7 @@ const themes = [
             bg: '#f5f5ff',
             main: '#7b6ca6',
             sub: '#6c6c99',
+            card: '#e8dcc8',
             text: '#2d2d4d',
             error: '#d63939',
             success: '#3d691d'
@@ -106,6 +108,7 @@ const themes = [
             bg: '#f5fffa',
             main: '#2b8c6f',
             sub: '#5c8c83',
+            card: '#e8dcc8',
             text: '#1a3b3b',
             error: '#d63939',
             success: '#2b754c'
@@ -118,6 +121,7 @@ const themes = [
             bg: '#002b36',
             main: '#cb4b16',
             sub: '#586e75',
+            card: '#073642',
             text: '#93a1a1',
             error: '#dc322f',
             success: '#859900'
@@ -130,6 +134,7 @@ const themes = [
             bg: '#1b1e28',
             main: '#a6da95',
             sub: '#4f5873',
+            card: '#252b37',
             text: '#e4f0fb',
             error: '#d0679d',
             success: '#5de4c7'
@@ -142,6 +147,7 @@ const themes = [
             bg: '#ffffff',
             main: '#ff66aa',
             sub: '#ffb7d5',
+            card: '#fff0f5',
             text: '#4f4f4f',
             error: '#ff4477',
             success: '#66cdaa'

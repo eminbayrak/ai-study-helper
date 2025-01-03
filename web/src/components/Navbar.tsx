@@ -3,6 +3,7 @@ import { Settings, Crown, Info, Bell, User } from "lucide-react";
 import { cn } from "../lib/utils";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useTheme } from "../contexts/ThemeContext";
+import { InfoDropdown } from './InfoDropdown';
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -39,14 +40,7 @@ function Navbar({ onMenuClick }: NavbarProps) {
           >
             <Crown className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="w-9 h-9"
-            style={iconButtonStyle}
-          >
-            <Info className="h-4 w-4" />
-          </Button>
+          <InfoDropdown />
         </div>
       </div>
 
