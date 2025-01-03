@@ -1,8 +1,9 @@
 import { Button } from "./ui/button";
-import { Settings, Crown, Bell, User} from "lucide-react";
+import { Settings, Crown, Bell, User } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useTheme } from "../contexts/ThemeContext";
 import { InfoDropdown } from './InfoDropdown';
+import '../assets/font.css';
 
 function Navbar() {
   const { currentTheme } = useTheme();
