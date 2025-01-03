@@ -2,18 +2,21 @@ import { Button } from "./ui/button";
 import { Settings, Crown, Info, Bell, User } from "lucide-react";
 import { cn } from "../lib/utils";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface NavbarProps {
   onMenuClick?: () => void;
 }
 
 function Navbar({ onMenuClick }: NavbarProps) {
+  const { currentTheme } = useTheme();
+
   return (
     <nav className="fixed top-0 left-0 right-0 h-12 flex items-center justify-between px-4 bg-transparent backdrop-blur-md z-50 border-b border-[#2c2c2c]/50">
       <div className="flex items-center space-x-4">
         {/* Logo */}
         <div className="text-lg font-custom font-light tracking-wider">
-          lingua<span className="text-[#e2b714]">slide</span>
+          edu<span style={{ color: currentTheme.colors.main }}>lingo</span>
         </div>
         
         {/* Left side icons */}

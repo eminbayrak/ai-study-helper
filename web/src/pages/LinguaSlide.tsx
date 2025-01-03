@@ -829,13 +829,13 @@ function LinguaSlide() {
         <div className="w-full max-w-2xl space-y-12">
           <div className="text-center space-y-2">
             <h1 className="text-5xl font-light tracking-wider">
-              lingua<span style={{ color: currentTheme.colors.main }}>slide</span>
+              lingo<span style={{ color: currentTheme.colors.main }}>slide</span>
             </h1>
             <div 
               className="inline-flex items-center px-2 py-1 rounded text-xs font-light"
               style={{ backgroundColor: currentTheme.colors.bg, color: currentTheme.colors.sub }}
-          >
-            BETA
+            >
+              BETA
             </div>
           </div>
 

@@ -34,9 +34,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="linguaslide"
+        name="edulingo"
         options={{
-          title: 'Lingua Slide',
+          title: 'EduLingo',
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="translate" size={24} color={color} />
           ),

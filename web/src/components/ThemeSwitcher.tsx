@@ -8,7 +8,7 @@ import {
 } from "./ui/dropdown-menu";
 import { useTheme } from "../contexts/ThemeContext";
 
-export default function ThemeSwitcher() {
+export function ThemeSwitcher() {
   const { currentTheme, setTheme, themes } = useTheme();
 
   return (
