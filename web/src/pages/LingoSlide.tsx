@@ -16,7 +16,12 @@ import {
   Volume2,
   X,
   Play,
-  Star
+  Star,
+  Settings,
+  Globe,
+  Timer,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import {
   ToggleGroup,
@@ -1060,7 +1065,7 @@ function LinguaSlide() {
                     }}
                     onClick={() => speak(item.word)}
                   >
-                    <Volume2 className="h-3 w-3" />
+                    <Volume2 className="h-3.5 w-3.5" />
                   </Button>
                   
                   <div className="flex-1 min-w-0">
