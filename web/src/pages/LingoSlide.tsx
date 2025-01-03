@@ -169,8 +169,9 @@ function LinguaSlide() {
       duration: 3000,
       className: "border-none",
       style: {
-        backgroundColor: currentTheme.colors.sub,
-        color: currentTheme.colors.text,
+        backgroundColor: currentTheme.colors.card,
+        color: currentTheme.colors.main,
+        border: `1px solid ${currentTheme.colors.main}40`,
       },
     });
   };
@@ -727,8 +728,9 @@ function LinguaSlide() {
           variant: "destructive",
           className: "border-none",
           style: {
-            backgroundColor: currentTheme.colors.sub,
-            color: currentTheme.colors.text,
+            backgroundColor: currentTheme.colors.card,
+            color: currentTheme.colors.main,
+            border: `1px solid ${currentTheme.colors.main}40`,
           },
         });
       }
@@ -766,8 +768,9 @@ function LinguaSlide() {
       variant: "destructive",
       className: "border-none",
       style: {
-        backgroundColor: currentTheme.colors.sub,
-        color: currentTheme.colors.text,
+        backgroundColor: currentTheme.colors.card,
+        color: currentTheme.colors.main,
+        border: `1px solid ${currentTheme.colors.main}40`,
       },
     });
 
@@ -858,32 +861,38 @@ function LinguaSlide() {
           <div className="flex justify-center items-center gap-2 mb-8">
             <Globe2 
               className="h-5 w-5"
-              style={{ color: currentTheme.colors.sub }} 
+              style={{ color: currentTheme.colors.main }}
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="text-base font-light px-2 h-8 flex items-center gap-2 hover:bg-opacity-10 hover:bg-white"
-                  style={{ color: currentTheme.colors.sub }}
+                  className="text-base font-medium px-3 h-8 flex items-center gap-2 hover:bg-opacity-20 hover:bg-white transition-colors"
+                  style={{ 
+                    color: currentTheme.colors.main,
+                    borderRadius: '4px',
+                  }}
                 >
                   {SUPPORTED_LANGUAGES[selectedLanguage].name.toLowerCase()}
-                  <ChevronDown className="h-4 w-4 opacity-60" />
+                  <ChevronDown className="h-4 w-4 opacity-80" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 style={{
-                  backgroundColor: currentTheme.colors.bg,
-                  border: `1px solid ${currentTheme.colors.sub}`,
+                  backgroundColor: currentTheme.colors.card,
+                  border: `1px solid ${currentTheme.colors.main}40`,
+                  borderRadius: '6px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
                 }}
               >
                 {Object.entries(SUPPORTED_LANGUAGES).map(([code, config]) => (
                   <DropdownMenuItem
                     key={code}
                     onClick={() => setSelectedLanguage(code as Language)}
-                    className="text-base"
+                    className="text-base font-medium hover:bg-opacity-10 hover:bg-white transition-colors"
                     style={{
-                      color: currentTheme.colors.text,
+                      color: currentTheme.colors.main,
+                      padding: '8px 12px',
                     }}
                   >
                     {config.displayName}
@@ -987,10 +996,13 @@ function LinguaSlide() {
         <div className="w-full max-w-2xl mx-auto mb-4">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-1">
-              <Timer className="h-4 w-4" style={{ color: currentTheme.colors.sub }} />
+              <Timer 
+                className="h-4 w-4" 
+                style={{ color: currentTheme.colors.main }}
+              />
               <span
                 style={{
-                  color: timeLeft <= 10 ? currentTheme.colors.main : currentTheme.colors.sub
+                  color: timeLeft <= 10 ? currentTheme.colors.error : currentTheme.colors.main
                 }}
                 className="text-xl font-light"
               >
@@ -998,7 +1010,7 @@ function LinguaSlide() {
               </span>
             </div>
             <span
-              style={{ color: currentTheme.colors.sub }}
+              style={{ color: currentTheme.colors.main }}
               className="text-xs font-light"
             >
               {wordList.filter(w => w.completed).length}/{wordList.length}
@@ -1016,18 +1028,14 @@ function LinguaSlide() {
 
         {/* Current Word */}
         <div
-          className="w-full max-w-2xl mx-auto p-3 mb-4 rounded"
+          className="w-full max-w-2xl mx-auto p-4 mb-4 rounded"
           style={{
-            backgroundColor: currentTheme.id.includes('light') ||
-              currentTheme.id === 'sepia' ||
-              currentTheme.id === 'lavender' ||
-              currentTheme.id === 'mint'
-              ? `${currentTheme.colors.sub}30`
-              : currentTheme.colors.sub
+            backgroundColor: currentTheme.colors.card,
+            border: `1px solid ${currentTheme.colors.main}40`,
           }}
         >
           <div className="text-center">
-            <span className="text-2xl font-light tracking-wide">
+            <span className="text-4xl font-light tracking-wider">
               {wordList.find(w => w.unlocked && !w.completed)?.word || ''}
             </span>
           </div>
@@ -1036,41 +1044,50 @@ function LinguaSlide() {
         {/* Word List */}
         <div className="w-full max-w-2xl mx-auto flex-1 overflow-hidden">
           <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-1">
+            <div className="flex-1 overflow-y-auto space-y-2">
               {wordList.map((item, index) => (
                 <div
                   key={index}
                   id={`word-${index}`}
-                  className="p-2 rounded transition-all flex items-center"
+                  className="p-3 rounded transition-all flex items-center"
                   style={{
                     backgroundColor: item.unlocked && !item.completed
                       ? currentTheme.colors.card
                       : 'transparent',
                     opacity: !item.unlocked ? 0.4 : 1,
-                    color: item.completed ?
-                      (item.hadIncorrectAttempt || item.skipped ? currentTheme.colors.main : currentTheme.colors.success)
-                      : currentTheme.colors.text
+                    color: item.completed
+                      ? (item.hadIncorrectAttempt || item.skipped 
+                        ? currentTheme.colors.error 
+                        : currentTheme.colors.success)
+                      : currentTheme.colors.text,
+                    border: item.unlocked && !item.completed 
+                      ? `1px solid ${currentTheme.colors.main}40`
+                      : 'none',
                   }}
                 >
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 mr-2 hover:opacity-100"
+                    className="h-8 w-8 mr-3 hover:opacity-100"
                     style={{
-                      color: currentTheme.colors.text,
-                      opacity: 0.7
+                      color: currentTheme.colors.main,
+                      opacity: 0.8
                     }}
                     onClick={() => speak(item.word)}
                   >
-                    <Volume2 className="h-3.5 w-3.5" />
+                    <Volume2 className="h-4 w-4" />
                   </Button>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-light tracking-wide">{item.word}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-medium tracking-wide">
+                        {item.word}
+                      </span>
                       <span
-                        style={{ color: currentTheme.colors.text }}
-                        className="text-xs font-light tracking-wider opacity-60"
+                        className="text-sm font-light tracking-wider opacity-80"
+                        style={{ 
+                          color: currentTheme.colors.main
+                        }}
                       >
                         {item.phonetic}
                       </span>
@@ -1079,9 +1096,15 @@ function LinguaSlide() {
 
                   {item.completed && (
                     item.skipped ? (
-                      <X className="h-3 w-3 ml-2" style={{ color: currentTheme.colors.main }} />
+                      <X 
+                        className="h-4 w-4 ml-3" 
+                        style={{ color: currentTheme.colors.error }} 
+                      />
                     ) : (
-                      <Star className="h-3 w-3 ml-2" style={{ color: currentTheme.colors.success }} />
+                      <Star 
+                        className="h-4 w-4 ml-3" 
+                        style={{ color: currentTheme.colors.success }} 
+                      />
                     )
                   )}
                 </div>
