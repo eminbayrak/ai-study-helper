@@ -67,6 +67,7 @@ interface WordStatus {
   hadIncorrectAttempt: boolean;
   currentAttemptIncorrect: boolean;
   inactivitySkip?: boolean;
+  meaning?: string;
 }
 
 interface GameResult {
@@ -123,6 +124,78 @@ const isMobileBrowser = () => {
 
 const isSpeechRecognitionSupported = () => {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+};
+
+// Add these types
+interface JapaneseWord {
+  word: string;
+  meaning: string;
+  furigana: string;
+  romaji: string;
+  level: number;
+}
+
+interface JapaneseApiResponse {
+  total: number;
+  offset: number;
+  limit: number;
+  words: JapaneseWord[];
+}
+
+// Add this mapping
+const DIFFICULTY_LEVEL_MAP: Record<Difficulty, number> = {
+  easy: 5,
+  medium: 4,
+  hard: 3,
+};
+
+// Add function to fetch Japanese words
+const fetchJapaneseWords = async (difficulty: Difficulty): Promise<JapaneseWord[]> => {
+  try {
+    const level = DIFFICULTY_LEVEL_MAP[difficulty];
+    // Use smaller offsets to ensure we get data
+    const possibleOffsets = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+    const randomOffset = possibleOffsets[Math.floor(Math.random() * possibleOffsets.length)];
+    
+    console.log(`Fetching Japanese words, offset: ${randomOffset}`);
+
+    const response = await fetch(
+      `https://jlpt-vocab-api.vercel.app/api/words?offset=${randomOffset}&limit=10`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch Japanese words');
+    }
+    
+    const data: JapaneseApiResponse = await response.json();
+    console.log('API Response:', data);
+
+    if (!data.words || data.words.length === 0) {
+      throw new Error('No words received from API');
+    }
+
+    // Filter words by level after getting response
+    const filteredWords = data.words
+      .filter(word => word.level === level)
+      .slice(0, 10);
+
+    if (filteredWords.length < 10) {
+      // If not enough words, try with offset 0
+      if (randomOffset !== 0) {
+        const fallbackResponse = await fetch(
+          `https://jlpt-vocab-api.vercel.app/api/words?offset=0&limit=10`
+        );
+        const fallbackData: JapaneseApiResponse = await fallbackResponse.json();
+        return fallbackData.words.filter(word => word.level === level).slice(0, 10);
+      }
+      throw new Error('Not enough words for selected difficulty level');
+    }
+
+    return filteredWords;
+  } catch (error) {
+    console.error('Error fetching Japanese words:', error);
+    throw error;
+  }
 };
 
 function LinguaSlide() {
@@ -189,60 +262,84 @@ function LinguaSlide() {
       setIsLoading(true);
       setApiError(null);
 
-      // Get the correct word data based on selected language
-      const currentWordData = 
-        selectedLanguage === 'en' ? wordData : 
-        selectedLanguage === 'ja' ? wordDataJa :
-        wordDataTr;
+      if (selectedLanguage === 'ja') {
+        try {
+          const japaneseWords = await fetchJapaneseWords(difficulty);
+          console.log('Fetched Japanese words:', japaneseWords); // Debug log
+          
+          const initialWords = japaneseWords.map((word, index) => ({
+            word: word.word,
+            phonetic: word.romaji
+              .toLowerCase()
+              .split('')
+              .join('‧')
+              .replace(/‧$/,''),
+            meaning: word.meaning,
+            completed: false,
+            unlocked: index === 0,
+            order: index,
+            attempts: 0,
+            hadIncorrectAttempt: false,
+            currentAttemptIncorrect: false
+          }));
 
-      // Get all words for the current difficulty
-      const allWords = currentWordData[difficulty];
-      
-      // Filter out previously used words
-      const availableWords = allWords.filter(word => !usedWords.has(word));
-      
-      // If we're running low on unused words, reset the used words
-      if (availableWords.length < 10) {
-        setUsedWords(new Set());
-        // Use all words again
-        availableWords.push(...allWords);
-      }
-
-      // Randomly select 10 words
-      const selectedWords = [];
-      const usedIndexes = new Set();
-      const newUsedWords = new Set(usedWords);
-      
-      while (selectedWords.length < 10 && usedIndexes.size < availableWords.length) {
-        const randomIndex = Math.floor(Math.random() * availableWords.length);
-        if (!usedIndexes.has(randomIndex)) {
-          const word = availableWords[randomIndex];
-          selectedWords.push(word);
-          newUsedWords.add(word);
-          usedIndexes.add(randomIndex);
+          wordListRef.current = initialWords;
+          setWordList(initialWords);
+        } catch (error) {
+          console.error('Error in Japanese words setup:', error);
+          setApiError('Failed to load Japanese words. Please try again.');
+          return false;
         }
+      } else {
+        // Get words for English and Turkish
+        const currentWordData = selectedLanguage === 'en' ? wordData : wordDataTr;
+        const allWords = currentWordData[difficulty];
+        
+        // Filter out previously used words
+        const availableWords = allWords.filter(word => !usedWords.has(word));
+        
+        // If we're running low on unused words, reset the used words
+        if (availableWords.length < 10) {
+          setUsedWords(new Set());
+          availableWords.push(...allWords);
+        }
+
+        // Randomly select 10 words
+        const selectedWords = [];
+        const usedIndexes = new Set();
+        const newUsedWords = new Set(usedWords);
+        
+        while (selectedWords.length < 10 && usedIndexes.size < availableWords.length) {
+          const randomIndex = Math.floor(Math.random() * availableWords.length);
+          if (!usedIndexes.has(randomIndex)) {
+            const word = availableWords[randomIndex];
+            selectedWords.push(word);
+            newUsedWords.add(word);
+            usedIndexes.add(randomIndex);
+          }
+        }
+
+        setUsedWords(newUsedWords);
+
+        const initialWords = selectedWords.map((word, index) => ({
+          word,
+          phonetic: word.toLowerCase()
+            .replace(/([aeiou])/g, '$1·')
+            .split('')
+            .join('‧')
+            .replace(/‧$/,''),
+          completed: false,
+          unlocked: index === 0,
+          order: index,
+          attempts: 0,
+          hadIncorrectAttempt: false,
+          currentAttemptIncorrect: false
+        }));
+        
+        wordListRef.current = initialWords;
+        setWordList(initialWords);
       }
 
-      // Update used words
-      setUsedWords(newUsedWords);
-
-      const initialWords = selectedWords.map((word, index) => ({
-        word,
-        phonetic: word.toLowerCase()
-          .replace(/([aeiou])/g, '$1·')
-          .split('')
-          .join('‧')
-          .replace(/‧$/,''),
-        completed: false,
-        unlocked: index === 0,
-        order: index,
-        attempts: 0,
-        hadIncorrectAttempt: false,
-        currentAttemptIncorrect: false
-      }));
-      
-      wordListRef.current = initialWords;
-      setWordList(initialWords);
       setProgress(0);
       return true;
     } catch (error) {
@@ -1104,13 +1201,31 @@ function LinguaSlide() {
                         {item.word}
                       </span>
                       <span
-                        className="text-xs font-light tracking-wider opacity-80"
+                        className="text-xs font-light tracking-wider"
                         style={{ 
-                          color: currentTheme.colors.main
+                          color: item.completed
+                            ? (item.hadIncorrectAttempt || item.skipped 
+                              ? currentTheme.colors.error 
+                              : currentTheme.colors.success)
+                            : currentTheme.colors.text,
                         }}
                       >
                         {item.phonetic}
                       </span>
+                      {selectedLanguage === 'ja' && item.meaning && (
+                        <span
+                          className="text-xs font-light tracking-wider opacity-80"
+                          style={{ 
+                            color: item.completed
+                              ? (item.hadIncorrectAttempt || item.skipped 
+                                ? currentTheme.colors.error 
+                                : currentTheme.colors.success)
+                              : currentTheme.colors.text,
+                          }}
+                        >
+                          ({item.meaning})
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -1241,21 +1356,21 @@ function LinguaSlide() {
                       .map((word, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-2 rounded"
+                          className="p-2.5 rounded"
                           style={{
                             backgroundColor: currentTheme.id.includes('light') ||
                               currentTheme.id === 'sepia' ||
                               currentTheme.id === 'lavender' ||
                               currentTheme.id === 'mint'
-                              ? `${currentTheme.colors.sub}30`  // More transparent for light themes
-                              : currentTheme.colors.sub         // Keep original for dark themes
+                              ? `${currentTheme.colors.sub}30`
+                              : currentTheme.colors.sub
                           }}
                         >
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 shrink-0 hover:opacity-80"
+                              className="h-7 w-7 shrink-0 mr-2 hover:opacity-80"
                               style={{
                                 color: currentTheme.colors.text
                               }}
@@ -1263,32 +1378,35 @@ function LinguaSlide() {
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </Button>
-                            <span className="text-base font-light tracking-wide">
-                              {word.word}
-                            </span>
-                            {word.skipped && (
-                              <span
-                                className="text-xs font-light italic tracking-wider"
-                                style={{ color: currentTheme.colors.text }}
-                              >
-                                (skipped)
-                              </span>
-                            )}
-                            {!word.skipped && word.spokenWord && (
-                              <span
-                                className="text-xs font-light italic tracking-wider truncate"
-                                style={{ color: currentTheme.colors.text }}
-                              >
-                                (you said: {word.spokenWord})
-                              </span>
-                            )}
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-medium tracking-wide">
+                                  {word.word}
+                                </span>
+                                <span className="text-xs font-light tracking-wider">
+                                  {word.phonetic}
+                                </span>
+                                {selectedLanguage === 'ja' && word.meaning && (
+                                  <span className="text-xs font-light tracking-wider opacity-80">
+                                    ({word.meaning})
+                                  </span>
+                                )}
+                                {word.skipped ? (
+                                  <span className="text-xs font-light italic">
+                                    (skipped)
+                                  </span>
+                                ) : word.spokenWord && (
+                                  <span className="text-xs font-light italic truncate">
+                                    (you said: {word.spokenWord})
+                                  </span>
+                                )}
+                                <span className="text-xs font-light shrink-0">
+                                  {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <span
-                            className="text-xs font-light shrink-0 ml-2"
-                            style={{ color: currentTheme.colors.text }}
-                          >
-                            {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
-                          </span>
                         </div>
                       ))}
                   </div>
