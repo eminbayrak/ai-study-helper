@@ -1,15 +1,10 @@
 import { Button } from "./ui/button";
-import { Settings, Crown, Info, Bell, User } from "lucide-react";
-import { cn } from "../lib/utils";
+import { Settings, Crown, Bell, User} from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useTheme } from "../contexts/ThemeContext";
 import { InfoDropdown } from './InfoDropdown';
 
-interface NavbarProps {
-  onMenuClick?: () => void;
-}
-
-function Navbar({ onMenuClick }: NavbarProps) {
+function Navbar() {
   const { currentTheme } = useTheme();
 
   const iconButtonStyle = {
