@@ -4,14 +4,11 @@ export interface Theme {
   colors: {
     bg: string;
     main: string;
-    caret: string;
     sub: string;
     text: string;
     error: string;
     success: string;
-    colorfulError: string;
-    colorfulSuccess: string;
-  };
+  }
 }
 
 export const themes: Theme[] = [
@@ -21,13 +18,10 @@ export const themes: Theme[] = [
     colors: {
       bg: '#323437',
       main: '#e2b714',
-      caret: '#e2b714',
       sub: '#646669',
       text: '#d1d0c5',
       error: '#ca4754',
-      success: '#4CAF50',
-      colorfulError: '#ca4754',
-      colorfulSuccess: '#4CAF50'
+      success: '#4CAF50'
     }
   },
   {
@@ -36,13 +30,10 @@ export const themes: Theme[] = [
     colors: {
       bg: '#282a36',
       main: '#bd93f9',
-      caret: '#f8f8f2',
       sub: '#6272a4',
       text: '#f8f8f2',
       error: '#ff5555',
-      success: '#50fa7b',
-      colorfulError: '#ff5555',
-      colorfulSuccess: '#50fa7b'
+      success: '#50fa7b'
     }
   },
   {
@@ -51,13 +42,10 @@ export const themes: Theme[] = [
     colors: {
       bg: '#272822',
       main: '#f92672',
-      caret: '#f8f8f2',
       sub: '#75715e',
       text: '#f8f8f2',
       error: '#f92672',
-      success: '#a6e22e',
-      colorfulError: '#f92672',
-      colorfulSuccess: '#a6e22e'
+      success: '#a6e22e'
     }
   }
 ]; 

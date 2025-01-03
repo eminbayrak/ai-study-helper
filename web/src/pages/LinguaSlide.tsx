@@ -1,3 +1,10 @@
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 import { useEffect, useState, useRef } from 'react';
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -70,21 +77,6 @@ const isSpeechRecognitionSupported = () => {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 };
 
-// Replace showToast with direct toast calls
-const showToast = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
-  toast({
-    variant: type === 'error' ? 'destructive' : 'default',
-    title: type.charAt(0).toUpperCase() + type.slice(1),
-    description: message,
-    duration: 3000,
-    className: "border-none",
-    style: {
-      backgroundColor: currentTheme.colors.sub,
-      color: currentTheme.colors.text,
-    },
-  });
-};
-
 function LinguaSlide() {
   const { currentTheme } = useTheme();
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
@@ -121,6 +113,24 @@ function LinguaSlide() {
   // Add these refs back near the top with other refs
   const successAudio = useRef(new Audio(successSound));
   const failureAudio = useRef(new Audio(failureSound));
+
+  // Add a new ref to track recognition state
+  const isRecognitionActiveRef = useRef(false);
+
+  // Move showToast inside the component to access currentTheme
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+    toast({
+      variant: type === 'error' ? 'destructive' : 'default',
+      title: type.charAt(0).toUpperCase() + type.slice(1),
+      description: message,
+      duration: 3000,
+      className: "border-none",
+      style: {
+        backgroundColor: currentTheme.colors.sub,
+        color: currentTheme.colors.text,
+      },
+    });
+  };
 
   // Update fetchWords to use refs
   const fetchWords = async () => {
@@ -281,16 +291,10 @@ function LinguaSlide() {
             }
           };
 
-          recognition.onerror = (event: any) => {
-            console.error('Recognition error:', event.error);
-            if (gameStateRef.current === 'playing' && isInitializedRef.current) {
-              try {
-                recognition.stop();
-                setTimeout(() => recognition.start(), 100);
-              } catch (error) {
-                console.error('Error restarting after error:', error);
-              }
-            }
+          recognition.onerror = (event: { error: string }) => {
+            console.error('Speech recognition error:', event.error);
+            setIsListening(false);
+            isRecognitionActiveRef.current = false;
           };
 
           let lastProcessedResult = '';
@@ -615,24 +619,69 @@ function LinguaSlide() {
     setShowInactiveWarning(false);
   };
 
+  // Update toggleListening function
   const toggleListening = () => {
-    if (recognitionRef.current) {
+    if (!recognitionRef.current) return;
+
+    try {
       if (isListening) {
         recognitionRef.current.stop();
+        isRecognitionActiveRef.current = false;
+        setIsListening(false);
       } else {
-        recognitionRef.current.start();
+        if (!isRecognitionActiveRef.current) {
+          recognitionRef.current.start();
+          isRecognitionActiveRef.current = true;
+          setIsListening(true);
+        }
       }
+    } catch (error) {
+      console.error('Speech recognition error:', error);
+      isRecognitionActiveRef.current = false;
+      setIsListening(false);
     }
   };
 
+  // Update the recognition initialization
   useEffect(() => {
+    if (!isSpeechRecognitionSupported()) return;
+
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      isRecognitionActiveRef.current = true;
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      isRecognitionActiveRef.current = false;
+    };
+
+    recognition.onerror = (event: { error: string }) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      isRecognitionActiveRef.current = false;
+    };
+
+    // ... rest of recognition setup ...
+
+    recognitionRef.current = recognition;
+
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+          isRecognitionActiveRef.current = false;
+          setIsListening(false);
+        } catch (error) {
+          console.error('Error stopping recognition:', error);
+        }
       }
     };
   }, []);
@@ -680,14 +729,19 @@ function LinguaSlide() {
 
   // Update close button handler
   const handleClose = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      updateGameState('ready');
+      isInitializedRef.current = false;
+    } catch (error) {
+      console.error('Error closing:', error);
     }
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    updateGameState('ready');
-    isInitializedRef.current = false;
   };
 
   // Add cleanup for audio
@@ -790,15 +844,6 @@ function LinguaSlide() {
     }
   }, [gameState, isLoading]);
 
-  // Example of using theme colors in inline styles
-  const commonStyles = {
-    color: currentTheme.colors.text,
-  };
-
-  const subTextStyles = {
-    color: currentTheme.colors.sub,
-  };
-
   // Update error handling
   useEffect(() => {
     if (errorToast) {
@@ -834,8 +879,8 @@ function LinguaSlide() {
             <div 
               className="inline-flex items-center px-2 py-1 rounded text-xs font-light"
               style={{ backgroundColor: currentTheme.colors.bg, color: currentTheme.colors.sub }}
-            >
-              BETA
+          >
+            BETA
             </div>
           </div>
 
@@ -1001,11 +1046,10 @@ function LinguaSlide() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 mr-2"
+                    className="h-6 w-6 mr-2 hover:opacity-100"
                     style={{
                       color: currentTheme.colors.text,
-                      opacity: 0.7,
-                      '&:hover': { opacity: 1 }
+                      opacity: 0.7
                     }}
                     onClick={() => speak(item.word)}
                   >
@@ -1145,12 +1189,11 @@ function LinguaSlide() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 shrink-0"
+                              className="h-7 w-7 shrink-0 hover:opacity-80"
                               style={{
-                                color: currentTheme.colors.text,
-                                '&:hover': { opacity: 0.8 }
+                                color: currentTheme.colors.text
                               }}
-                          onClick={() => speak(word.word)}
+                              onClick={() => speak(word.word)}
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </Button>

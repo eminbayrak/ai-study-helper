@@ -81,6 +81,18 @@ const themes = [
       error: '#dc322f',
       success: '#859900'
     }
+  },
+  {
+    id: 'poimandres',
+    name: 'Poimandres',
+    colors: {
+      bg: '#1b1e28',
+      main: '#a6da95',
+      sub: '#383e4c',
+      text: '#e4f0fb',
+      error: '#d0679d',
+      success: '#5de4c7'
+    }
   }
 ];
 

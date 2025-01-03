@@ -17,7 +17,8 @@ export function ThemeSwitcher() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative"
+          className="relative w-9 h-9"
+          style={{ color: currentTheme.colors.text }}
         >
           <Palette className="h-4 w-4" />
           <div 
@@ -38,13 +39,10 @@ export function ThemeSwitcher() {
           <DropdownMenuItem
             key={theme.id}
             onClick={() => setTheme(theme.id)}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 hover:bg-[${theme.colors.sub}]`}
             style={{
               backgroundColor: currentTheme.id === theme.id ? theme.colors.bg : 'transparent',
               color: currentTheme.colors.text,
-              ':hover': {
-                backgroundColor: theme.colors.sub,
-              },
             }}
           >
             <div
