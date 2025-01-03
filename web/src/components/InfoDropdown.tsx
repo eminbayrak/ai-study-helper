@@ -47,26 +47,31 @@ export const InfoDropdown = () => {
                         transform: 'translateX(-50%)',
                     }}
                 >
-                    <div className="p-4 text-center">
+                    <div className="p-4 text-left text-sm">
                         <h3 
-                            className="text-lg font-semibold mb-3"
+                            className="text-base font-semibold mb-3"
                             style={{ color: currentTheme.colors.main }}
                         >
                             About LingoSlide
                         </h3>
                         <div style={{ color: currentTheme.colors.text }}>
-                            <p className="mb-3">
+                            <p className="mb-3 text-sm">
                                 LingoSlide is a pronunciation practice app that helps you improve your speaking skills.
                             </p>
-                            <ul className="list-none space-y-2">
+                            <ul className="list-none space-y-2 text-sm">
                                 <li>Practice word pronunciation</li>
                                 <li>Get instant feedback</li>
                                 <li>Track your progress</li>
                                 <li>Multiple difficulty levels</li>
                             </ul>
-                            <div className="mt-4 pt-3 border-t" style={{ borderColor: currentTheme.colors.sub }}>
-                                <p className="text-sm">
+                            <div className="mt-4 pt-3 border-t text-xs" style={{ borderColor: currentTheme.colors.sub }}>
+                                <p>
                                     🎤 Tip: Position your microphone 4-6 inches from your mouth for best results
+                                </p>
+                            </div>
+                            <div className="mt-3 pt-3 border-t text-xs text-center" style={{ borderColor: currentTheme.colors.sub }}>
+                                <p>
+                                    Developed with ❤️ by ebyrock
                                 </p>
                             </div>
                         </div>
