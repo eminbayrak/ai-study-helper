@@ -835,9 +835,36 @@ function LinguaSlide() {
   }, []);
 
   const speak = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = SUPPORTED_LANGUAGES[selectedLanguage].recognition;
-    window.speechSynthesis.speak(utterance);
+    try {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Set language based on selected language
+      switch (selectedLanguage) {
+        case 'tr':
+          utterance.lang = 'tr-TR';
+          break;
+        case 'ja':
+          utterance.lang = 'ja-JP';
+          break;
+        case 'es':
+          utterance.lang = 'es-ES';
+          break;
+        default:
+          utterance.lang = 'en-US';
+      }
+
+      // Optional: Adjust speech rate and pitch
+      utterance.rate = 0.9;  // Slightly slower
+      utterance.pitch = 1;   // Normal pitch
+
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.error('Speech synthesis error:', error);
+      showToast('Unable to speak the word', 'error');
+    }
   };
 
   const handleSkip = () => {
