@@ -264,17 +264,48 @@ function LinguaSlide() {
 
       if (selectedLanguage === 'ja') {
         try {
-          const japaneseWords = await fetchJapaneseWords(difficulty);
-          console.log('Fetched Japanese words:', japaneseWords); // Debug log
+          // Get words from local JSON file based on difficulty
+          const allWords = wordDataJa[difficulty];
           
-          const initialWords = japaneseWords.map((word, index) => ({
-            word: word.word,
-            phonetic: word.romaji
-              .toLowerCase()
-              .split('')
-              .join('‧')
-              .replace(/‧$/,''),
+          // Filter out previously used words
+          const availableWords = allWords.filter(word => {
+            // For easy level, only select words that have furigana
+            if (difficulty === 'easy') {
+              return !usedWords.has(word) && word.furigana;
+            }
+            return !usedWords.has(word);
+          });
+          
+          // If we're running low on unused words, reset the used words
+          if (availableWords.length < 10) {
+            setUsedWords(new Set());
+            availableWords.push(...allWords);
+          }
+
+          // Randomly select 10 words
+          const selectedWords = [];
+          const usedIndexes = new Set();
+          const newUsedWords = new Set(usedWords);
+          
+          while (selectedWords.length < 10 && usedIndexes.size < availableWords.length) {
+            const randomIndex = Math.floor(Math.random() * availableWords.length);
+            if (!usedIndexes.has(randomIndex)) {
+              const word = availableWords[randomIndex];
+              selectedWords.push(word);
+              newUsedWords.add(word);
+              usedIndexes.add(randomIndex);
+            }
+          }
+
+          setUsedWords(newUsedWords);
+
+          const initialWords = selectedWords.map((word, index) => ({
+            // For easy level, use hiragana (furigana). For others, use kanji (word)
+            word: difficulty === 'easy' ? word.furigana : word.word,
+            phonetic: word.romaji.toLowerCase(),
             meaning: word.meaning,
+            // Show both kanji and hiragana for medium/hard levels
+            furigana: difficulty !== 'easy' ? word.furigana : undefined,
             completed: false,
             unlocked: index === 0,
             order: index,
@@ -1200,29 +1231,19 @@ function LinguaSlide() {
                       <span className="text-base font-medium tracking-wide">
                         {item.word}
                       </span>
-                      <span
-                        className="text-xs font-light tracking-wider"
-                        style={{ 
-                          color: item.completed
-                            ? (item.hadIncorrectAttempt || item.skipped 
-                              ? currentTheme.colors.error 
-                              : currentTheme.colors.success)
-                            : currentTheme.colors.text,
-                        }}
-                      >
+                      {item.furigana && (
+                        <span
+                          className="text-xs font-light"
+                          style={{ color: currentTheme.colors.sub }}
+                        >
+                          ({item.furigana})
+                        </span>
+                      )}
+                      <span className="text-xs font-light tracking-wider">
                         {item.phonetic}
                       </span>
                       {selectedLanguage === 'ja' && item.meaning && (
-                        <span
-                          className="text-xs font-light tracking-wider opacity-80"
-                          style={{ 
-                            color: item.completed
-                              ? (item.hadIncorrectAttempt || item.skipped 
-                                ? currentTheme.colors.error 
-                                : currentTheme.colors.success)
-                              : currentTheme.colors.text,
-                          }}
-                        >
+                        <span className="text-xs font-light tracking-wider opacity-80">
                           ({item.meaning})
                         </span>
                       )}
@@ -1264,14 +1285,8 @@ function LinguaSlide() {
               style={{
                 borderColor: currentTheme.colors.sub,
                 color: isListening ? currentTheme.colors.success : currentTheme.colors.text,
-                backgroundColor: isListening
-                  ? (currentTheme.id.includes('light') ||
-                    currentTheme.id === 'sepia' ||
-                    currentTheme.id === 'lavender' ||
-                    currentTheme.id === 'mint'
-                    ? `${currentTheme.colors.sub}30`
-                    : currentTheme.colors.sub)
-                  : 'transparent'
+                backgroundColor: isListening ? `${currentTheme.colors.success}20` : 'transparent',
+                transition: 'all 0.2s ease'
               }}
               onClick={toggleListening}
             >
@@ -1358,12 +1373,7 @@ function LinguaSlide() {
                           key={index}
                           className="p-2.5 rounded"
                           style={{
-                            backgroundColor: currentTheme.id.includes('light') ||
-                              currentTheme.id === 'sepia' ||
-                              currentTheme.id === 'lavender' ||
-                              currentTheme.id === 'mint'
-                              ? `${currentTheme.colors.sub}30`
-                              : currentTheme.colors.sub
+                            border: `1px solid ${currentTheme.colors.sub}40`,
                           }}
                         >
                           <div className="flex items-center">

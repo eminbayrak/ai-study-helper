@@ -15,12 +15,12 @@ const themes = [
         name: 'Serika Dark',
         colors: {
             bg: '#323437',
-            main: '#e2b714',
-            sub: '#646669',
-            card: '#2c2e31',
-            text: '#d1d0c5',
-            error: '#ca4754',
-            success: '#4CAF50'
+            main: '#ffd700',
+            sub: '#cccccc',
+            card: '#2e2e2e',
+            text: '#f8f8f8',
+            error: '#ff4d4d',
+            success: '#3fb950'
         }
     },
     {
@@ -28,10 +28,10 @@ const themes = [
         name: 'Dracula',
         colors: {
             bg: '#282a36',
-            main: '#bd93f9',
-            sub: '#6272a4',
+            main: '#ff79c6',
+            sub: '#b3b3d1',
             card: '#44475a',
-            text: '#f8f8f2',
+            text: '#ffffff',
             error: '#ff5555',
             success: '#50fa7b'
         }
@@ -41,8 +41,8 @@ const themes = [
         name: 'Monokai',
         colors: {
             bg: '#272822',
-            main: '#f92672',
-            sub: '#75715e',
+            main: '#fd971f',
+            sub: '#ccccaa',
             card: '#3e3d32',
             text: '#f8f8f2',
             error: '#f92672',
@@ -54,10 +54,10 @@ const themes = [
         name: 'Nord',
         colors: {
             bg: '#2e3440',
-            main: '#88c0d0',
-            sub: '#4c566a',
+            main: '#81a1c1',
+            sub: '#a3a9b5',
             card: '#3b4252',
-            text: '#d8dee9',
+            text: '#e5e9f0',
             error: '#bf616a',
             success: '#a3be8c'
         }
@@ -67,8 +67,8 @@ const themes = [
         name: 'Pastel',
         colors: {
             bg: '#F4B4B0',
-            main: '#FDF587',
-            sub: '#B88B88',
+            main: '#FFDD67',
+            sub: '#e0c3c3',
             card: '#D49B97',
             text: '#2C2C2C',
             error: '#E15A54',
@@ -81,9 +81,9 @@ const themes = [
         colors: {
             bg: '#f4ecd8',
             main: '#8b4513',
-            sub: '#6b5744',
+            sub: '#a0897d',
             card: '#e8dcc8',
-            text: '#433022',
+            text: '#2f1e14',
             error: '#b22222',
             success: '#2e5014'
         }
@@ -93,9 +93,9 @@ const themes = [
         name: 'Lavender',
         colors: {
             bg: '#f5f5ff',
-            main: '#7b6ca6',
-            sub: '#6c6c99',
-            card: '#e8dcc8',
+            main: '#8a7ca8',
+            sub: '#b0a6c2',
+            card: '#ddd7eb',
             text: '#2d2d4d',
             error: '#d63939',
             success: '#3d691d'
@@ -106,9 +106,9 @@ const themes = [
         name: 'Mint',
         colors: {
             bg: '#f5fffa',
-            main: '#2b8c6f',
-            sub: '#5c8c83',
-            card: '#e8dcc8',
+            main: '#3ba992',
+            sub: '#8ebfb5',
+            card: '#d9f2ea',
             text: '#1a3b3b',
             error: '#d63939',
             success: '#2b754c'
@@ -120,9 +120,9 @@ const themes = [
         colors: {
             bg: '#002b36',
             main: '#cb4b16',
-            sub: '#586e75',
+            sub: '#96a3a6',
             card: '#073642',
-            text: '#93a1a1',
+            text: '#eee8d5',
             error: '#dc322f',
             success: '#859900'
         }
@@ -133,9 +133,9 @@ const themes = [
         colors: {
             bg: '#1b1e28',
             main: '#a6da95',
-            sub: '#4f5873',
+            sub: '#7f8697',
             card: '#252b37',
-            text: '#e4f0fb',
+            text: '#ffffff',
             error: '#d0679d',
             success: '#5de4c7'
         }
@@ -147,7 +147,7 @@ const themes = [
             bg: '#ffffff',
             main: '#ff66aa',
             sub: '#ffb7d5',
-            card: '#fff0f5',
+            card: '#ffeef2',
             text: '#4f4f4f',
             error: '#ff4477',
             success: '#66cdaa'
@@ -157,13 +157,13 @@ const themes = [
         id: 'ruby',
         name: 'Ruby',
         colors: {
-            bg: '#07737A',
-            main: '#F3E03A',
-            sub: '#27858B',
-            card: '#055C62',
-            text: '#F3E03A',
-            error: '#FF5555',
-            success: '#00CC99'
+            bg: '#044f54',
+            main: '#ffcc00',
+            sub: '#5a9da0',
+            card: '#055c62',
+            text: '#ffffff',
+            error: '#ff5555',
+            success: '#00cc99'
         }
     }
 ];
@@ -200,4 +200,4 @@ export function useTheme() {
         throw new Error('useTheme must be used within a CustomThemeProvider');
     }
     return context;
-} 
+}
