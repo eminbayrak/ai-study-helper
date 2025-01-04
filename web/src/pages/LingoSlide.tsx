@@ -133,6 +133,7 @@ interface WordData {
   meaning: string;
   romaji?: string;
   furigana?: string;
+  level?: number;  // JLPT level (5 = N5, 1 = N1)
 }
 
 // Add type guard function
@@ -242,18 +243,37 @@ function LinguaSlide() {
 
       if (selectedLanguage === 'ja') {
         try {
-          // Filter out previously used words
+          // Filter words based on JLPT level and difficulty
           const availableWords = allWords.filter((word: WordData | string) => {
-            if (typeof word === 'string') {
-              return !usedWords.has(word);
+            if (typeof word === 'string') return false;
+            
+            if (difficulty === 'easy') {
+              // For easy: show only N5 level words and words with furigana
+              return isWordData(word) && word.furigana && (word.level === 5 || !word.level);
+            } else if (difficulty === 'medium') {
+              // For medium: show N4 and N3 level words
+              return isWordData(word) && (word.level === 4 || word.level === 3);
+            } else {
+              // For hard: show N2 and N1 level words
+              return isWordData(word) && (word.level === 2 || word.level === 1);
             }
-            return !usedWords.has(word) && (!difficulty || difficulty !== 'easy' || word.furigana);
           });
-          
+
           // If we're running low on unused words, reset the used words
           if (availableWords.length < 10) {
             setUsedWords(new Set());
-            availableWords.push(...allWords);
+            const resetWords = allWords.filter((word: WordData | string) => {
+              if (!isWordData(word)) return false;
+              
+              if (difficulty === 'easy') {
+                return word.furigana && (word.level === 5 || !word.level);
+              } else if (difficulty === 'medium') {
+                return word.level === 4 || word.level === 3;
+              } else {
+                return word.level === 2 || word.level === 1;
+              }
+            });
+            availableWords.push(...resetWords);
           }
 
           // Randomly select 10 words
@@ -273,19 +293,32 @@ function LinguaSlide() {
 
           setUsedWords(newUsedWords);
 
-          const initialWords = selectedWords.map((word, index) => ({
-            word: isWordData(word) ? word.word : String(word),
-            phonetic: isWordData(word) ? 
-              (word.romaji || word.word.toLowerCase()) : 
-              String(word).toLowerCase(),
-            meaning: isWordData(word) ? word.meaning : undefined,
-            completed: false,
-            unlocked: index === 0,
-            order: index,
-            attempts: 0,
-            hadIncorrectAttempt: false,
-            currentAttemptIncorrect: false
-          }));
+          const initialWords = selectedWords.map((word, index) => {
+            if (!isWordData(word)) return {
+              word: String(word),
+              phonetic: String(word).toLowerCase(),
+              meaning: undefined,
+              completed: false,
+              unlocked: index === 0,
+              order: index,
+              attempts: 0,
+              hadIncorrectAttempt: false,
+              currentAttemptIncorrect: false
+            };
+
+            return {
+              word: difficulty === 'easy' ? word.furigana! : word.word,
+              phonetic: word.romaji || '',
+              meaning: word.meaning,
+              furigana: difficulty !== 'easy' ? word.furigana : undefined,
+              completed: false,
+              unlocked: index === 0,
+              order: index,
+              attempts: 0,
+              hadIncorrectAttempt: false,
+              currentAttemptIncorrect: false
+            };
+          });
 
           wordListRef.current = initialWords;
           setWordList(initialWords);
@@ -326,19 +359,32 @@ function LinguaSlide() {
 
         setUsedWords(newUsedWords);
 
-        const initialWords = selectedWords.map((word, index) => ({
-          word: isWordData(word) ? word.word : String(word),
-          phonetic: isWordData(word) ? 
-            (word.romaji || word.word.toLowerCase()) : 
-            String(word).toLowerCase(),
-          meaning: isWordData(word) ? word.meaning : undefined,
-          completed: false,
-          unlocked: index === 0,
-          order: index,
-          attempts: 0,
-          hadIncorrectAttempt: false,
-          currentAttemptIncorrect: false
-        }));
+        const initialWords = selectedWords.map((word, index) => {
+          if (!isWordData(word)) return {
+            word: String(word),
+            phonetic: String(word).toLowerCase(),
+            meaning: undefined,
+            completed: false,
+            unlocked: index === 0,
+            order: index,
+            attempts: 0,
+            hadIncorrectAttempt: false,
+            currentAttemptIncorrect: false
+          };
+
+          return {
+            word: difficulty === 'easy' ? word.furigana! : word.word,
+            phonetic: word.romaji || '',
+            meaning: word.meaning,
+            furigana: difficulty !== 'easy' ? word.furigana : undefined,
+            completed: false,
+            unlocked: index === 0,
+            order: index,
+            attempts: 0,
+            hadIncorrectAttempt: false,
+            currentAttemptIncorrect: false
+          };
+        });
         
         wordListRef.current = initialWords;
         setWordList(initialWords);
