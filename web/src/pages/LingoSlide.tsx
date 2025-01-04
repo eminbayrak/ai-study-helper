@@ -133,7 +133,6 @@ interface WordData {
   meaning: string;
   romaji?: string;
   furigana?: string;
-  level?: number;  // JLPT level (5 = N5, 1 = N1)
 }
 
 // Add type guard function
@@ -165,6 +164,16 @@ const loadWordData = async (language: Language) => {
   } catch (error) {
     console.error('Error loading word data:', error);
     throw error;
+  }
+};
+
+// Add this helper at the top of the file
+const isDev = import.meta.env.DEV;
+
+// Add a debug logger function
+const debugLog = (...args: any[]) => {
+  if (isDev) {
+    console.log(...args);
   }
 };
 
@@ -243,20 +252,16 @@ function LinguaSlide() {
 
       if (selectedLanguage === 'ja') {
         try {
-          // Filter words based on JLPT level and difficulty
+          // Filter words based on difficulty only
           const availableWords = allWords.filter((word: WordData | string) => {
             if (typeof word === 'string') return false;
             
             if (difficulty === 'easy') {
-              // For easy: show only N5 level words and words with furigana
-              return isWordData(word) && word.furigana && (word.level === 5 || !word.level);
-            } else if (difficulty === 'medium') {
-              // For medium: show N4 and N3 level words
-              return isWordData(word) && (word.level === 4 || word.level === 3);
-            } else {
-              // For hard: show N2 and N1 level words
-              return isWordData(word) && (word.level === 2 || word.level === 1);
+              // For easy: show only words with furigana
+              return word.furigana;
             }
+            // For medium and hard: use the predefined sets in the JSON
+            return true;
           });
 
           // If we're running low on unused words, reset the used words
@@ -524,12 +529,12 @@ function LinguaSlide() {
           recognition.onstart = () => {
             setIsListening(true);
             isRecognitionActiveRef.current = true;
-            console.log('Speech recognition started');
+            debugLog('Speech recognition started');
           };
 
           recognition.onend = () => {
             setIsListening(false);
-            console.log('Speech recognition ended');
+            debugLog('Speech recognition ended');
             // Only restart if game is still playing and not manually stopped
             if (gameStateRef.current === 'playing' && isInitializedRef.current && !recognition.stopping) {
               try {
@@ -564,7 +569,7 @@ function LinguaSlide() {
 
                 if (gameStateRef.current === 'playing' && isInitializedRef.current) {
                   const spokenText = transcript.toLowerCase().trim();
-                  console.log('Spoken word:', spokenText);
+                  debugLog('Spoken word:', spokenText);
                   
                   if (!isProcessing) {
                     setIsProcessing(true);
@@ -582,13 +587,13 @@ function LinguaSlide() {
           // Start recognition immediately
           try {
             recognition.start();
-            console.log('Recognition started initially');
+            debugLog('Recognition started initially');
           } catch (error) {
             console.error('Error starting recognition:', error);
             setTimeout(() => {
               try {
                 recognition.start();
-                console.log('Recognition started after delay');
+                debugLog('Recognition started after delay');
               } catch (e) {
                 console.error('Failed to start recognition after delay:', e);
                 showToast('Failed to start speech recognition', 'error');
@@ -658,7 +663,7 @@ function LinguaSlide() {
     
     // Special handling for Japanese
     if (selectedLanguage === 'ja') {
-      console.log('Comparing Japanese:', { cleanSpoken, cleanTarget });
+      debugLog('Comparing Japanese:', { cleanSpoken, cleanTarget });
       
       // Convert to basic form (remove long vowels, standardize characters)
       const standardize = (text: string) => {
@@ -681,7 +686,7 @@ function LinguaSlide() {
       const normalizedSpoken = standardize(cleanSpoken);
       const normalizedTarget = standardize(cleanTarget);
       
-      console.log('Normalized:', { normalizedSpoken, normalizedTarget });
+      debugLog('Normalized:', { normalizedSpoken, normalizedTarget });
 
       // Direct match
       if (normalizedSpoken === normalizedTarget) return true;
@@ -700,7 +705,7 @@ function LinguaSlide() {
       });
 
       const similarity = matchCount / Math.max(spokenChars.length, targetChars.length);
-      console.log('Similarity score:', similarity);
+      debugLog('Similarity score:', similarity);
 
       // Be very lenient with Japanese - accept if 40% or more characters match
       return similarity >= 0.4;
@@ -726,7 +731,7 @@ function LinguaSlide() {
     const cleanSpoken = spokenText.toLowerCase().trim();
     const target = currentWord.word.toLowerCase().trim();
 
-    console.log('Checking pronunciation:', { spoken: cleanSpoken, target, currentWord });
+    debugLog('Checking pronunciation:', { spoken: cleanSpoken, target, currentWord });
 
     // Check exact match or similar pronunciation
     if (cleanSpoken === target || isSimilarPronunciation(cleanSpoken, target)) {
@@ -737,7 +742,7 @@ function LinguaSlide() {
   };
 
   const handleCorrectPronunciation = (currentWord: WordStatus) => {
-    console.log('Correct pronunciation!', currentWord);
+    debugLog('Correct pronunciation!', currentWord);
     
     // Play success sound
     successAudio.current.currentTime = 0;
@@ -769,7 +774,7 @@ function LinguaSlide() {
   };
 
   const handleIncorrectPronunciation = (currentWord: WordStatus, spokenText: string) => {
-    console.log('Incorrect pronunciation!', { currentWord, spokenText });
+    debugLog('Incorrect pronunciation!', { currentWord, spokenText });
     
     // Play failure sound
     failureAudio.current.currentTime = 0;
