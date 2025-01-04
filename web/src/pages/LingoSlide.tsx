@@ -481,6 +481,7 @@ function LinguaSlide() {
     };
   }, [gameState, isLoading]); // Add isLoading dependency
 
+  // Update the startGame function's recognition setup
   const startGame = async () => {
     if (isMobileBrowser() || !isSpeechRecognitionSupported()) {
       setErrorToast('Speech recognition is not supported in this browser. Please use a desktop browser like Chrome.');
@@ -509,47 +510,46 @@ function LinguaSlide() {
 
         // Initialize speech recognition
         if ('webkitSpeechRecognition' in window) {
+          // Stop any existing recognition
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+
           const recognition = new (window as any).webkitSpeechRecognition();
           recognition.continuous = true;
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
           recognition.lang = SUPPORTED_LANGUAGES[selectedLanguage].recognition;
 
-          // Reduce the processing delay
-          const processDelay = 100;
-
           recognition.onstart = () => {
             setIsListening(true);
+            isRecognitionActiveRef.current = true;
             console.log('Speech recognition started');
           };
 
           recognition.onend = () => {
             setIsListening(false);
             console.log('Speech recognition ended');
-            if (gameStateRef.current === 'playing' && isInitializedRef.current) {
+            // Only restart if game is still playing and not manually stopped
+            if (gameStateRef.current === 'playing' && isInitializedRef.current && !recognition.stopping) {
               try {
-                recognition.start();
+                setTimeout(() => {
+                  recognition.start();
+                }, 300);
               } catch (error) {
                 console.error('Error restarting recognition:', error);
-                setTimeout(() => {
-                  try {
-                    recognition.start();
-                  } catch (e) {
-                    console.error('Failed to restart recognition:', e);
-                  }
-                }, 100);
               }
             }
           };
 
           recognition.onerror = (event: { error: string; }) => {
             console.error('Speech recognition error:', event.error);
+            if (event.error === 'no-speech') {
+              return;
+            }
             setIsListening(false);
             isRecognitionActiveRef.current = false;
           };
-
-          let lastProcessedResult = '';
-          let processingTimeout: Timeout | null = null;
 
           recognition.onresult = (event: any) => {
             for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -564,50 +564,37 @@ function LinguaSlide() {
 
                 if (gameStateRef.current === 'playing' && isInitializedRef.current) {
                   const spokenText = transcript.toLowerCase().trim();
-
-                  // Prevent processing the same word multiple times
-                  if (spokenText === lastProcessedResult) {
-                    continue;
-                  }
-
-                  lastProcessedResult = spokenText;
                   console.log('Spoken word:', spokenText);
-
-                  // Clear any existing timeout
-                  if (processingTimeout) {
-                    clearTimeout(processingTimeout);
+                  
+                  if (!isProcessing) {
+                    setIsProcessing(true);
+                    checkPronunciation(spokenText);
+                    setIsProcessing(false);
                   }
-
-                  // Process after a short delay
-                  processingTimeout = setTimeout(() => {
-                    if (!isProcessing) {
-                      setIsProcessing(true);
-                      checkPronunciation(transcript);
-                      setIsProcessing(false);
-                    }
-                  }, processDelay);
                 }
               }
             }
           };
 
+          recognition.stopping = false;
+          recognitionRef.current = recognition;
+
           // Start recognition immediately
           try {
             recognition.start();
-            console.log('Recognition started in try block');
+            console.log('Recognition started initially');
           } catch (error) {
             console.error('Error starting recognition:', error);
             setTimeout(() => {
               try {
                 recognition.start();
-                console.log('Recognition started in catch block');
+                console.log('Recognition started after delay');
               } catch (e) {
-                console.error('Failed to start recognition in catch block:', e);
+                console.error('Failed to start recognition after delay:', e);
+                showToast('Failed to start speech recognition', 'error');
               }
-            }, 100);
+            }, 300);
           }
-
-          recognitionRef.current = recognition;
         }
       } else {
         updateGameState('ready');
@@ -665,24 +652,63 @@ function LinguaSlide() {
 
   // Update the isSimilarPronunciation function
   const isSimilarPronunciation = (spoken: string, target: string) => {
-    if (spoken === target) {
-      return true;
-    }
-
-    // Clean up the input
-    const cleanSpoken = spoken.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
-    const cleanTarget = target.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+    // Clean up the inputs
+    const cleanSpoken = spoken.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim().toLowerCase();
+    const cleanTarget = target.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim().toLowerCase();
     
-    if (cleanSpoken === cleanTarget) {
-      return true;
+    // Special handling for Japanese
+    if (selectedLanguage === 'ja') {
+      console.log('Comparing Japanese:', { cleanSpoken, cleanTarget });
+      
+      // Convert to basic form (remove long vowels, standardize characters)
+      const standardize = (text: string) => {
+        return text
+          .replace(/ā|â/g, 'a').replace(/ī|î/g, 'i').replace(/ū|û/g, 'u')
+          .replace(/ē|ê/g, 'e').replace(/ō|ô/g, 'o')
+          .replace(/ー/g, '')
+          .replace(/[\s\-]/g, '')
+          .replace(/[っつ]/g, 'tsu')
+          .replace(/[づず]/g, 'zu')
+          .replace(/[ぢじ]/g, 'ji')
+          .replace(/[をお]/g, 'o')
+          .replace(/[へえ]/g, 'e')
+          .replace(/[わ]/g, 'wa')
+          .replace(/[ゐ]/g, 'i')
+          .replace(/[ゑ]/g, 'e')
+          .replace(/[ん]/g, 'n');
+      };
+
+      const normalizedSpoken = standardize(cleanSpoken);
+      const normalizedTarget = standardize(cleanTarget);
+      
+      console.log('Normalized:', { normalizedSpoken, normalizedTarget });
+
+      // Direct match
+      if (normalizedSpoken === normalizedTarget) return true;
+
+      // Check if one contains the other
+      if (normalizedSpoken.includes(normalizedTarget) || 
+          normalizedTarget.includes(normalizedSpoken)) return true;
+
+      // Very lenient similarity check for Japanese
+      let matchCount = 0;
+      const spokenChars = normalizedSpoken.split('');
+      const targetChars = normalizedTarget.split('');
+      
+      spokenChars.forEach(char => {
+        if (targetChars.includes(char)) matchCount++;
+      });
+
+      const similarity = matchCount / Math.max(spokenChars.length, targetChars.length);
+      console.log('Similarity score:', similarity);
+
+      // Be very lenient with Japanese - accept if 40% or more characters match
+      return similarity >= 0.4;
     }
 
-    // Check substitutions using the imported data
-    if (substitutionsData[target as keyof typeof substitutionsData]?.includes(cleanSpoken)) {
-      return true;
-    }
-
-    return false;
+    // For other languages, use stricter matching
+    return cleanSpoken === cleanTarget || 
+           substitutionsData[cleanTarget as keyof typeof substitutionsData]?.includes(cleanSpoken);
   };
 
   // Add this helper function
@@ -692,78 +718,79 @@ function LinguaSlide() {
 
   // Modify the checkPronunciation function
   const checkPronunciation = (spokenText: string) => {
-    if (containsInappropriateWords(spokenText)) {
-      console.log('Inappropriate word detected');
-      failureAudio.current.currentTime = 0;
-      failureAudio.current.play();
-      return;
-    }
+    if (!isInitializedRef.current || gameStateRef.current !== 'playing') return;
 
-    setHasSpokenOnce(true);
-
-    if (!spokenText || gameStateRef.current !== 'playing' || !isInitializedRef.current) {
-      return;
-    }
-
-    const spokenLower = spokenText.toLowerCase().trim();
     const currentWord = wordListRef.current.find(w => w.unlocked && !w.completed);
-
     if (!currentWord) return;
 
-    const targetLower = currentWord.word.toLowerCase().trim();
-    const isCorrect = spokenLower === targetLower || isSimilarPronunciation(spokenLower, targetLower);
+    const cleanSpoken = spokenText.toLowerCase().trim();
+    const target = currentWord.word.toLowerCase().trim();
 
-    console.log('Speech check:', {
-      spoken: spokenLower,
-      target: targetLower,
-      isCorrect,
-      attempts: (currentWord.attempts || 0) + 1
-    });
+    console.log('Checking pronunciation:', { spoken: cleanSpoken, target, currentWord });
 
-    // Only play sounds if the word hasn't been completed
-    if (!currentWord.completed) {
-      if (isCorrect) {
-        successAudio.current.currentTime = 0;
-        successAudio.current.play();
-      } else {
-        failureAudio.current.currentTime = 0;
-        failureAudio.current.play();
-      }
+    // Check exact match or similar pronunciation
+    if (cleanSpoken === target || isSimilarPronunciation(cleanSpoken, target)) {
+      handleCorrectPronunciation(currentWord);
+    } else {
+      handleIncorrectPronunciation(currentWord, cleanSpoken);
     }
+  };
 
-    // Always update the word list with the attempt
-    const updatedWordList = wordListRef.current.map((word, index) => {
-      if (word === currentWord) {
-        const newAttempts = (word.attempts || 0) + 1;
-        const hadIncorrectAttempt = word.spokenWord && word.spokenWord !== word.word;
+  const handleCorrectPronunciation = (currentWord: WordStatus) => {
+    console.log('Correct pronunciation!', currentWord);
+    
+    // Play success sound
+    successAudio.current.currentTime = 0;
+    successAudio.current.play().catch(console.error);
 
-        return {
-          ...word,
-          completed: isCorrect,
-          skipped: false,
-          spokenWord: hadIncorrectAttempt ? word.spokenWord : spokenLower,
-          attempts: newAttempts,
-          hadIncorrectAttempt: hadIncorrectAttempt || !isCorrect,
-          currentAttemptIncorrect: !isCorrect
-        };
+    const updatedWords = wordListRef.current.map(word => {
+      if (word.order === currentWord.order) {
+        return { ...word, completed: true };
       }
-      if (index === currentWord.order + 1 && isCorrect) {
+      if (word.order === currentWord.order + 1) {
         return { ...word, unlocked: true };
       }
       return word;
     });
 
-    wordListRef.current = updatedWordList;
-    setWordList(updatedWordList);
+    wordListRef.current = updatedWords;
+    setWordList(updatedWords);
+    setProgress((currentWord.order + 1) * 10);
+    setHasSpokenOnce(true);
+    setLastSpokenTimestamp(Date.now());
 
-    if (isCorrect) {
-      setProgress((currentWord.order + 1) * 10);
+    // Check if game is complete
+    if (updatedWords.every(w => w.completed)) {
+      setTimeout(() => endGame(), 500);
+    } else {
+      // Scroll to next word
       setTimeout(() => scrollToActiveWord(currentWord.order + 1), 100);
-      if (updatedWordList.every(w => w.completed)) {
-        setTimeout(() => endGame(), 500);
-      }
     }
+  };
 
+  const handleIncorrectPronunciation = (currentWord: WordStatus, spokenText: string) => {
+    console.log('Incorrect pronunciation!', { currentWord, spokenText });
+    
+    // Play failure sound
+    failureAudio.current.currentTime = 0;
+    failureAudio.current.play().catch(console.error);
+
+    const updatedWords = wordListRef.current.map(word => {
+      if (word.order === currentWord.order) {
+        return {
+          ...word,
+          attempts: word.attempts + 1,
+          hadIncorrectAttempt: true,
+          currentAttemptIncorrect: true,
+          spokenWord: spokenText
+        };
+      }
+      return word;
+    });
+
+    wordListRef.current = updatedWords;
+    setWordList(updatedWords);
+    setHasSpokenOnce(true);
     setLastSpokenTimestamp(Date.now());
   };
 
@@ -789,50 +816,6 @@ function LinguaSlide() {
       setIsListening(false);
     }
   };
-
-  // Update the recognition initialization
-  useEffect(() => {
-    if (!isSpeechRecognitionSupported()) return;
-
-    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-    const recognition = new SpeechRecognition();
-
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      isRecognitionActiveRef.current = true;
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      isRecognitionActiveRef.current = false;
-    };
-
-    recognition.onerror = (event: { error: string; }) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-      isRecognitionActiveRef.current = false;
-    };
-
-    // ... rest of recognition setup ...
-
-    recognitionRef.current = recognition;
-
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-          isRecognitionActiveRef.current = false;
-          setIsListening(false);
-        } catch (error) {
-          console.error('Error stopping recognition:', error);
-        }
-      }
-    };
-  }, []);
 
   const speak = (text: string) => {
     try {
