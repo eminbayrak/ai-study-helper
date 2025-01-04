@@ -306,11 +306,27 @@ function LinguaSlide() {
               currentAttemptIncorrect: false
             };
 
+            // Different handling for Japanese vs other languages
+            if (selectedLanguage === 'ja' as Language) {
+              return {
+                word: difficulty === 'easy' ? word.furigana! : word.word,
+                phonetic: word.romaji || '',
+                meaning: word.meaning,
+                furigana: difficulty !== 'easy' ? word.furigana : undefined,
+                completed: false,
+                unlocked: index === 0,
+                order: index,
+                attempts: 0,
+                hadIncorrectAttempt: false,
+                currentAttemptIncorrect: false
+              };
+            }
+
+            // For Turkish and other languages
             return {
-              word: difficulty === 'easy' ? word.furigana! : word.word,
-              phonetic: word.romaji || '',
+              word: word.word,
+              phonetic: word.word.toLowerCase(),
               meaning: word.meaning,
-              furigana: difficulty !== 'easy' ? word.furigana : undefined,
               completed: false,
               unlocked: index === 0,
               order: index,
@@ -372,11 +388,27 @@ function LinguaSlide() {
             currentAttemptIncorrect: false
           };
 
+          // Different handling for Japanese vs other languages
+          if (selectedLanguage === 'ja' as Language) {
+            return {
+              word: difficulty === 'easy' ? word.furigana! : word.word,
+              phonetic: word.romaji || '',
+              meaning: word.meaning,
+              furigana: difficulty !== 'easy' ? word.furigana : undefined,
+              completed: false,
+              unlocked: index === 0,
+              order: index,
+              attempts: 0,
+              hadIncorrectAttempt: false,
+              currentAttemptIncorrect: false
+            };
+          }
+
+          // For Turkish and other languages
           return {
-            word: difficulty === 'easy' ? word.furigana! : word.word,
-            phonetic: word.romaji || '',
+            word: word.word,
+            phonetic: word.word.toLowerCase(),
             meaning: word.meaning,
-            furigana: difficulty !== 'easy' ? word.furigana : undefined,
             completed: false,
             unlocked: index === 0,
             order: index,

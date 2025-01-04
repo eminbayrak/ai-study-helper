@@ -1,12 +1,241 @@
 {
     "easy": [
-        {
-            "word": "gato",
-            "meaning": "cat"
-        },
-        {
-            "word": "perro",
-            "meaning": "dog"
-        }
+      {
+        "word": "gato",
+        "meaning": "cat"
+      },
+      {
+        "word": "perro",
+        "meaning": "dog"
+      },
+      {
+        "word": "correr",
+        "meaning": "run"
+      },
+      {
+        "word": "saltar",
+        "meaning": "jump"
+      },
+      {
+        "word": "jugar",
+        "meaning": "play"
+      },
+      {
+        "word": "libro",
+        "meaning": "book"
+      },
+      {
+        "word": "árbol",
+        "meaning": "tree"
+      },
+      {
+        "word": "pez",
+        "meaning": "fish"
+      },
+      {
+        "word": "pájaro",
+        "meaning": "bird"
+      },
+      {
+        "word": "casa",
+        "meaning": "house"
+      },
+      {
+        "word": "mesa",
+        "meaning": "table"
+      },
+      {
+        "word": "sol",
+        "meaning": "sun"
+      },
+      {
+        "word": "luna",
+        "meaning": "moon"
+      },
+      {
+        "word": "estrella",
+        "meaning": "star"
+      },
+      {
+        "word": "puerta",
+        "meaning": "door"
+      },
+      {
+        "word": "flor",
+        "meaning": "flower"
+      },
+      {
+        "word": "nube",
+        "meaning": "cloud"
+      },
+      {
+        "word": "viento",
+        "meaning": "wind"
+      },
+      {
+        "word": "lluvia",
+        "meaning": "rain"
+      }
+    ],
+    "medium": [
+      {
+        "word": "manzana",
+        "meaning": "apple"
+      },
+      {
+        "word": "naranja",
+        "meaning": "orange"
+      },
+      {
+        "word": "plátano",
+        "meaning": "banana"
+      },
+      {
+        "word": "jardín",
+        "meaning": "garden"
+      },
+      {
+        "word": "ventana",
+        "meaning": "window"
+      },
+      {
+        "word": "silla",
+        "meaning": "chair"
+      },
+      {
+        "word": "botella",
+        "meaning": "bottle"
+      },
+      {
+        "word": "profesor",
+        "meaning": "teacher"
+      },
+      {
+        "word": "familia",
+        "meaning": "family"
+      },
+      {
+        "word": "amigo",
+        "meaning": "friend"
+      },
+      {
+        "word": "ciudad",
+        "meaning": "city"
+      },
+      {
+        "word": "puente",
+        "meaning": "bridge"
+      },
+      {
+        "word": "cultura",
+        "meaning": "culture"
+      },
+      {
+        "word": "tradición",
+        "meaning": "tradition"
+      },
+      {
+        "word": "mercado",
+        "meaning": "market"
+      },
+      {
+        "word": "viaje",
+        "meaning": "trip"
+      },
+      {
+        "word": "historia",
+        "meaning": "history"
+      },
+      {
+        "word": "música",
+        "meaning": "music"
+      },
+      {
+        "word": "tecnología",
+        "meaning": "technology"
+      }
+    ],
+    "hard": [
+      {
+        "word": "hermoso",
+        "meaning": "beautiful"
+      },
+      {
+        "word": "maravilloso",
+        "meaning": "wonderful"
+      },
+      {
+        "word": "difícil",
+        "meaning": "difficult"
+      },
+      {
+        "word": "importante",
+        "meaning": "important"
+      },
+      {
+        "word": "interesante",
+        "meaning": "interesting"
+      },
+      {
+        "word": "educación",
+        "meaning": "education"
+      },
+      {
+        "word": "universidad",
+        "meaning": "university"
+      },
+      {
+        "word": "conocimiento",
+        "meaning": "knowledge"
+      },
+      {
+        "word": "experiencia",
+        "meaning": "experience"
+      },
+      {
+        "word": "desarrollo",
+        "meaning": "development"
+      },
+      {
+        "word": "arquitectura",
+        "meaning": "architecture"
+      },
+      {
+        "word": "filosofía",
+        "meaning": "philosophy"
+      },
+      {
+        "word": "investigación",
+        "meaning": "research"
+      },
+      {
+        "word": "civilización",
+        "meaning": "civilization"
+      },
+      {
+        "word": "literatura",
+        "meaning": "literature"
+      },
+      {
+        "word": "ingeniería",
+        "meaning": "engineering"
+      },
+      {
+        "word": "responsabilidad",
+        "meaning": "responsibility"
+      },
+      {
+        "word": "independencia",
+        "meaning": "independence"
+      },
+      {
+        "word": "fenómeno",
+        "meaning": "phenomenon"
+      },
+      {
+        "word": "utilitarismo",
+        "meaning": "utilitarianism"
+      }
     ]
-}
+  }
+  
