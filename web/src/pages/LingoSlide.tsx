@@ -18,6 +18,8 @@ import {
   Play,
   Star,
   Timer,
+  Globe2,
+  ChevronDown,
 } from "lucide-react";
 import {
   ToggleGroup,
@@ -26,6 +28,19 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { Toaster } from "../components/ui/toaster";
 import { toast } from "../hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 
 // Assets
 import successSoundFile from '../assets/sounds/success.mp3';
@@ -38,6 +53,7 @@ const failureSound = failureSoundFile;
 type Difficulty = 'easy' | 'medium' | 'hard';
 type GameState = 'ready' | 'playing' | 'finished';
 type Timeout = ReturnType<typeof setTimeout>;
+type Language = 'en' | 'ja' | 'tr' | 'es';
 
 interface WordStatus {
   word: string;
@@ -51,12 +67,20 @@ interface WordStatus {
   hadIncorrectAttempt: boolean;
   currentAttemptIncorrect: boolean;
   inactivitySkip?: boolean;
+  meaning?: string;
 }
 
 interface GameResult {
   wordsCompleted: number;
   timeSpent: number;
   accuracy: number;
+}
+
+interface LanguageConfig {
+  code: string;
+  name: string;
+  recognition: string;
+  displayName: string;
 }
 
 // Constants
@@ -66,9 +90,39 @@ const DIFFICULTY_TIME_LIMITS: Record<Difficulty, number> = {
   hard: 75,
 };
 
+const SUPPORTED_LANGUAGES: Record<Language, LanguageConfig> = {
+  en: {
+    code: 'en',
+    name: 'English',
+    recognition: 'en-US',
+    displayName: 'English',
+  },
+  ja: {
+    code: 'ja',
+    name: 'Japanese',
+    recognition: 'ja-JP',
+    displayName: '日本語',
+  },
+  tr: {
+    code: 'tr',
+    name: 'Turkish',
+    recognition: 'tr-TR',
+    displayName: 'Türkçe',
+  },
+  es: {
+    code: 'es',
+    name: 'Spanish',
+    recognition: 'es-ES',
+    displayName: 'Español',
+  },
+};
+
 import profanity from 'leo-profanity';
 import wordData from '../data/words.json';
 import substitutionsData from '../data/substitutions.json';
+import wordDataJa from '../data/words_ja.json';
+import wordDataTr from '../data/words_tr.json';
+import wordDataSp from '../data/words_sp.json';
 
 // Add these helper functions at the top of your file
 const isMobileBrowser = () => {
@@ -77,6 +131,83 @@ const isMobileBrowser = () => {
 
 const isSpeechRecognitionSupported = () => {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+};
+
+// Add these types
+interface JapaneseWord {
+  word: string;
+  meaning: string;
+  furigana: string;
+  romaji: string;
+  level: number;
+}
+
+interface JapaneseApiResponse {
+  total: number;
+  offset: number;
+  limit: number;
+  words: JapaneseWord[];
+}
+
+// Add this mapping
+const DIFFICULTY_LEVEL_MAP: Record<Difficulty, number> = {
+  easy: 5,
+  medium: 4,
+  hard: 3,
+};
+
+// Add function to fetch Japanese words
+const fetchJapaneseWords = async (difficulty: Difficulty): Promise<JapaneseWord[]> => {
+  try {
+    const level = DIFFICULTY_LEVEL_MAP[difficulty];
+    // Use smaller offsets to ensure we get data
+    const possibleOffsets = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+    const randomOffset = possibleOffsets[Math.floor(Math.random() * possibleOffsets.length)];
+    
+    console.log(`Fetching Japanese words, offset: ${randomOffset}`);
+
+    const response = await fetch(
+      `https://jlpt-vocab-api.vercel.app/api/words?offset=${randomOffset}&limit=10`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch Japanese words');
+    }
+    
+    const data: JapaneseApiResponse = await response.json();
+    console.log('API Response:', data);
+
+    if (!data.words || data.words.length === 0) {
+      throw new Error('No words received from API');
+    }
+
+    // Filter words by level after getting response
+    const filteredWords = data.words
+      .filter(word => word.level === level)
+      .slice(0, 10);
+
+    if (filteredWords.length < 10) {
+      // If not enough words, try with offset 0
+      if (randomOffset !== 0) {
+        const fallbackResponse = await fetch(
+          `https://jlpt-vocab-api.vercel.app/api/words?offset=0&limit=10`
+        );
+        const fallbackData: JapaneseApiResponse = await fallbackResponse.json();
+        return fallbackData.words.filter(word => word.level === level).slice(0, 10);
+      }
+      throw new Error('Not enough words for selected difficulty level');
+    }
+
+    return filteredWords;
+  } catch (error) {
+    console.error('Error fetching Japanese words:', error);
+    throw error;
+  }
+};
+
+// Add a helper function to determine if a language needs phonetic display
+const needsPhonetic = (language: Language): boolean => {
+  return language === 'ja'; // Only Japanese needs phonetic for now
 };
 
 function LinguaSlide() {
@@ -98,6 +229,7 @@ function LinguaSlide() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
 
   // Add gameStateRef to track current state in callbacks
   const gameStateRef = useRef<GameState>('ready');
@@ -128,8 +260,9 @@ function LinguaSlide() {
       duration: 3000,
       className: "border-none",
       style: {
-        backgroundColor: currentTheme.colors.sub,
-        color: currentTheme.colors.text,
+        backgroundColor: currentTheme.colors.card,
+        color: currentTheme.colors.main,
+        border: `1px solid ${currentTheme.colors.main}40`,
       },
     });
   };
@@ -140,54 +273,119 @@ function LinguaSlide() {
       setIsLoading(true);
       setApiError(null);
 
-      // Get all words for the current difficulty
-      const allWords = wordData[difficulty];
-      
-      // Filter out previously used words
-      const availableWords = allWords.filter(word => !usedWords.has(word));
-      
-      // If we're running low on unused words, reset the used words
-      if (availableWords.length < 10) {
-        setUsedWords(new Set());
-        // Use all words again
-        availableWords.push(...allWords);
-      }
+      if (selectedLanguage === 'ja') {
+        try {
+          // Get words from local JSON file based on difficulty
+          const allWords = wordDataJa[difficulty];
+          
+          // Filter out previously used words
+          const availableWords = allWords.filter(word => {
+            // For easy level, only select words that have furigana
+            if (difficulty === 'easy') {
+              return !usedWords.has(word) && word.furigana;
+            }
+            return !usedWords.has(word);
+          });
+          
+          // If we're running low on unused words, reset the used words
+          if (availableWords.length < 10) {
+            setUsedWords(new Set());
+            availableWords.push(...allWords);
+          }
 
-      // Randomly select 10 words
-      const selectedWords = [];
-      const usedIndexes = new Set();
-      const newUsedWords = new Set(usedWords);
-      
-      while (selectedWords.length < 10 && usedIndexes.size < availableWords.length) {
-        const randomIndex = Math.floor(Math.random() * availableWords.length);
-        if (!usedIndexes.has(randomIndex)) {
-          const word = availableWords[randomIndex];
-          selectedWords.push(word);
-          newUsedWords.add(word);
-          usedIndexes.add(randomIndex);
+          // Randomly select 10 words
+          const selectedWords = [];
+          const usedIndexes = new Set();
+          const newUsedWords = new Set(usedWords);
+          
+          while (selectedWords.length < 10 && usedIndexes.size < availableWords.length) {
+            const randomIndex = Math.floor(Math.random() * availableWords.length);
+            if (!usedIndexes.has(randomIndex)) {
+              const word = availableWords[randomIndex];
+              selectedWords.push(word);
+              newUsedWords.add(word);
+              usedIndexes.add(randomIndex);
+            }
+          }
+
+          setUsedWords(newUsedWords);
+
+          const initialWords = selectedWords.map((word, index) => ({
+            // For easy level, use hiragana (furigana). For others, use kanji (word)
+            word: difficulty === 'easy' ? word.furigana : word.word,
+            phonetic: word.romaji.toLowerCase(),
+            meaning: word.meaning,
+            // Show both kanji and hiragana for medium/hard levels
+            furigana: difficulty !== 'easy' ? word.furigana : undefined,
+            completed: false,
+            unlocked: index === 0,
+            order: index,
+            attempts: 0,
+            hadIncorrectAttempt: false,
+            currentAttemptIncorrect: false
+          }));
+
+          wordListRef.current = initialWords;
+          setWordList(initialWords);
+        } catch (error) {
+          console.error('Error in Japanese words setup:', error);
+          setApiError('Failed to load Japanese words. Please try again.');
+          return false;
         }
+      } else {
+        // Get words for English, Turkish, and Spanish
+        const currentWordData = 
+          selectedLanguage === 'en' ? wordData : 
+          selectedLanguage === 'tr' ? wordDataTr : 
+          wordDataSp;
+        const allWords = currentWordData[difficulty];
+        
+        // Filter out previously used words
+        const availableWords = allWords.filter(word => !usedWords.has(word));
+        
+        // If we're running low on unused words, reset the used words
+        if (availableWords.length < 10) {
+          setUsedWords(new Set());
+          availableWords.push(...allWords);
+        }
+
+        // Randomly select 10 words
+        const selectedWords = [];
+        const usedIndexes = new Set();
+        const newUsedWords = new Set(usedWords);
+        
+        while (selectedWords.length < 10 && usedIndexes.size < availableWords.length) {
+          const randomIndex = Math.floor(Math.random() * availableWords.length);
+          if (!usedIndexes.has(randomIndex)) {
+            const word = availableWords[randomIndex];
+            selectedWords.push(word);
+            newUsedWords.add(word);
+            usedIndexes.add(randomIndex);
+          }
+        }
+
+        setUsedWords(newUsedWords);
+
+        const initialWords = selectedWords.map((word, index) => ({
+          word: word.word || word, // Handle both object and string formats
+          phonetic: word.romaji || word.toLowerCase()
+            .replace(/([aeiou])/g, '$1·')
+            .split('')
+            .join('‧')
+            .replace(/‧$/,''),
+          meaning: word.meaning, // Add meaning
+          completed: false,
+          unlocked: index === 0,
+          order: index,
+          attempts: 0,
+          hadIncorrectAttempt: false,
+          currentAttemptIncorrect: false
+        }));
+        
+        wordListRef.current = initialWords;
+        setWordList(initialWords);
       }
 
-      // Update used words
-      setUsedWords(newUsedWords);
-
-      const initialWords = selectedWords.map((word, index) => ({
-        word,
-        phonetic: word.toLowerCase()
-          .replace(/([aeiou])/g, '$1·')
-          .split('')
-          .join('‧')
-          .replace(/‧$/,''),
-        completed: false,
-        unlocked: index === 0,
-        order: index,
-        attempts: 0,
-        hadIncorrectAttempt: false,
-        currentAttemptIncorrect: false
-      }));
-      
-      wordListRef.current = initialWords;
-      setWordList(initialWords);
       setProgress(0);
       return true;
     } catch (error) {
@@ -279,7 +477,7 @@ function LinguaSlide() {
           recognition.continuous = true;
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
-          recognition.lang = 'en-US';
+          recognition.lang = SUPPORTED_LANGUAGES[selectedLanguage].recognition;
 
           // Reduce the processing delay
           const processDelay = 100;
@@ -602,7 +800,7 @@ function LinguaSlide() {
 
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
+    utterance.lang = SUPPORTED_LANGUAGES[selectedLanguage].recognition;
     window.speechSynthesis.speak(utterance);
   };
 
@@ -680,8 +878,9 @@ function LinguaSlide() {
           variant: "destructive",
           className: "border-none",
           style: {
-            backgroundColor: currentTheme.colors.sub,
-            color: currentTheme.colors.text,
+            backgroundColor: currentTheme.colors.card,
+            color: currentTheme.colors.main,
+            border: `1px solid ${currentTheme.colors.main}40`,
           },
         });
       }
@@ -719,8 +918,9 @@ function LinguaSlide() {
       variant: "destructive",
       className: "border-none",
       style: {
-        backgroundColor: currentTheme.colors.sub,
-        color: currentTheme.colors.text,
+        backgroundColor: currentTheme.colors.card,
+        color: currentTheme.colors.main,
+        border: `1px solid ${currentTheme.colors.main}40`,
       },
     });
 
@@ -801,6 +1001,51 @@ function LinguaSlide() {
               For the best experience, please use a desktop browser with Chrome.
             </div>
           )}
+
+          {/* Add Language Selector here */}
+          <div className="flex justify-center items-center gap-2 mb-8">
+            <Globe2 
+              className="h-5 w-5"
+              style={{ color: currentTheme.colors.main }}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="text-base font-medium px-3 h-8 flex items-center gap-2 hover:bg-opacity-20 hover:bg-white transition-colors"
+                  style={{ 
+                    color: currentTheme.colors.main,
+                    borderRadius: '4px',
+                  }}
+                >
+                  {SUPPORTED_LANGUAGES[selectedLanguage].name.toLowerCase()}
+                  <ChevronDown className="h-4 w-4 opacity-80" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                style={{
+                  backgroundColor: currentTheme.colors.card,
+                  border: `1px solid ${currentTheme.colors.main}40`,
+                  borderRadius: '6px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                }}
+              >
+                {Object.entries(SUPPORTED_LANGUAGES).map(([code, config]) => (
+                  <DropdownMenuItem
+                    key={code}
+                    onClick={() => setSelectedLanguage(code as Language)}
+                    className="text-base font-medium hover:bg-opacity-10 hover:bg-white transition-colors"
+                    style={{
+                      color: currentTheme.colors.main,
+                      padding: '8px 12px',
+                    }}
+                  >
+                    {config.displayName}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Difficulty Selection */}
           <div className="space-y-8">
@@ -892,82 +1137,96 @@ function LinguaSlide() {
         className="min-h-[calc(100vh-3rem)] flex flex-col p-4"
         style={{ color: currentTheme.colors.text }}
       >
-        {/* Timer and Progress */}
-        <div className="w-full max-w-2xl mx-auto mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-1">
-              <Timer className="h-4 w-4" style={{ color: currentTheme.colors.sub }} />
-              <span
-                style={{
-                  color: timeLeft <= 10 ? currentTheme.colors.main : currentTheme.colors.sub
-                }}
-                className="text-xl font-light"
-              >
-                {timeLeft}s
-              </span>
-            </div>
-            <span
-              style={{ color: currentTheme.colors.sub }}
-              className="text-xs font-light"
-            >
-              {wordList.filter(w => w.completed).length}/{wordList.length}
-            </span>
-          </div>
-          <Progress
-            value={progress}
-            className="h-0.5"
-            style={{
-              backgroundColor: `${currentTheme.colors.sub}40`,
-              ['--progress-color' as string]: currentTheme.colors.main,
-            }}
-          />
-        </div>
-
-        {/* Current Word */}
-        <div
-          className="w-full max-w-2xl mx-auto p-3 mb-4 rounded"
-          style={{
-            backgroundColor: currentTheme.id.includes('light') ||
-              currentTheme.id === 'sepia' ||
-              currentTheme.id === 'lavender' ||
-              currentTheme.id === 'mint'
-              ? `${currentTheme.colors.sub}30`
-              : currentTheme.colors.sub
+        {/* Sticky Header Container */}
+        <div 
+          className="sticky top-0 z-10 bg-opacity-80 backdrop-blur-sm -mx-4 px-4 pb-2"
+          style={{ 
+            backgroundColor: currentTheme.colors.bg,
+            top: '3rem',
           }}
         >
-          <div className="text-center">
-            <span className="text-2xl font-light tracking-wide">
-              {wordList.find(w => w.unlocked && !w.completed)?.word || ''}
-            </span>
+          {/* Timer and Progress */}
+          <div className="w-full max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              {/* Timer */}
+              <div className="flex items-center gap-1">
+                <Timer 
+                  className="h-4 w-4" 
+                  style={{ color: currentTheme.colors.main }}
+                />
+                <span
+                  style={{
+                    color: timeLeft <= 10 ? currentTheme.colors.error : currentTheme.colors.main
+                  }}
+                  className="text-xl font-light"
+                >
+                  {timeLeft}s
+                </span>
+              </div>
+
+              {/* Current Word - Moved between timer and progress */}
+              <div className="flex-1 text-center mx-4">
+                <span className="text-xl font-light tracking-wider">
+                  {wordList.find(w => w.unlocked && !w.completed)?.word || ''}
+                </span>
+              </div>
+
+              {/* Progress Counter */}
+              <span
+                style={{ color: currentTheme.colors.main }}
+                className="text-xs font-light"
+              >
+                {wordList.filter(w => w.completed).length}/{wordList.length}
+              </span>
+            </div>
+
+            <Progress
+              value={progress}
+              className="h-0.5"
+              style={{
+                backgroundColor: `${currentTheme.colors.sub}40`,
+                ['--progress-color' as string]: currentTheme.colors.main,
+              }}
+            />
           </div>
         </div>
 
-        {/* Word List */}
-        <div className="w-full max-w-2xl mx-auto flex-1 overflow-hidden">
+        {/* Word List - Adjust spacing and height */}
+        <div className="w-full max-w-2xl mx-auto flex-1 overflow-hidden mt-8">
           <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-1">
+            <div 
+              className="flex-1 overflow-y-auto space-y-2 pb-28 pt-2"
+              style={{
+                maxHeight: 'calc(100vh - 14rem)',
+              }}
+            >
               {wordList.map((item, index) => (
                 <div
                   key={index}
                   id={`word-${index}`}
-                  className="p-2 rounded transition-all flex items-center"
+                  className="p-2.5 rounded transition-all flex items-center"
                   style={{
                     backgroundColor: item.unlocked && !item.completed
                       ? currentTheme.colors.card
                       : 'transparent',
                     opacity: !item.unlocked ? 0.4 : 1,
-                    color: item.completed ?
-                      (item.hadIncorrectAttempt || item.skipped ? currentTheme.colors.main : currentTheme.colors.success)
-                      : currentTheme.colors.text
+                    color: item.completed
+                      ? (item.hadIncorrectAttempt || item.skipped 
+                        ? currentTheme.colors.error 
+                        : currentTheme.colors.success)
+                      : currentTheme.colors.text,
+                    border: item.unlocked && !item.completed 
+                      ? `1px solid ${currentTheme.colors.main}40`
+                      : 'none',
                   }}
                 >
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 mr-2 hover:opacity-100"
+                    className="h-7 w-7 mr-2 hover:opacity-100"
                     style={{
-                      color: currentTheme.colors.text,
-                      opacity: 0.7
+                      color: currentTheme.colors.main,
+                      opacity: 0.8
                     }}
                     onClick={() => speak(item.word)}
                   >
@@ -976,21 +1235,41 @@ function LinguaSlide() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-light tracking-wide">{item.word}</span>
-                      <span
-                        style={{ color: currentTheme.colors.text }}
-                        className="text-xs font-light tracking-wider opacity-60"
-                      >
-                        {item.phonetic}
+                      <span className="text-base font-medium tracking-wide">
+                        {item.word}
                       </span>
+                      {item.furigana && (
+                        <span
+                          className="text-xs font-light"
+                          style={{ color: currentTheme.colors.sub }}
+                        >
+                          ({item.furigana})
+                        </span>
+                      )}
+                      {needsPhonetic(selectedLanguage) && (
+                        <span className="text-xs font-light tracking-wider">
+                          {item.phonetic}
+                        </span>
+                      )}
+                      {(selectedLanguage === 'ja' || selectedLanguage === 'tr' || selectedLanguage === 'es') && item.meaning && (
+                        <span className="text-xs font-light tracking-wider opacity-80">
+                          ({item.meaning})
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {item.completed && (
                     item.skipped ? (
-                      <X className="h-3 w-3 ml-2" style={{ color: currentTheme.colors.main }} />
+                      <X 
+                        className="h-3.5 w-3.5 ml-2"
+                        style={{ color: currentTheme.colors.error }} 
+                      />
                     ) : (
-                      <Star className="h-3 w-3 ml-2" style={{ color: currentTheme.colors.success }} />
+                      <Star 
+                        className="h-3.5 w-3.5 ml-2"
+                        style={{ color: currentTheme.colors.success }} 
+                      />
                     )
                   )}
                 </div>
@@ -999,7 +1278,7 @@ function LinguaSlide() {
           </div>
         </div>
 
-        {/* Control Buttons */}
+        {/* Control Buttons - Keep at bottom */}
         <div
           className="fixed bottom-0 left-0 right-0 p-3 backdrop-blur-sm border-t"
           style={{
@@ -1015,14 +1294,8 @@ function LinguaSlide() {
               style={{
                 borderColor: currentTheme.colors.sub,
                 color: isListening ? currentTheme.colors.success : currentTheme.colors.text,
-                backgroundColor: isListening
-                  ? (currentTheme.id.includes('light') ||
-                    currentTheme.id === 'sepia' ||
-                    currentTheme.id === 'lavender' ||
-                    currentTheme.id === 'mint'
-                    ? `${currentTheme.colors.sub}30`
-                    : currentTheme.colors.sub)
-                  : 'transparent'
+                backgroundColor: isListening ? `${currentTheme.colors.success}20` : 'transparent',
+                transition: 'all 0.2s ease'
               }}
               onClick={toggleListening}
             >
@@ -1107,21 +1380,16 @@ function LinguaSlide() {
                       .map((word, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-2 rounded"
+                          className="p-2.5 rounded"
                           style={{
-                            backgroundColor: currentTheme.id.includes('light') ||
-                              currentTheme.id === 'sepia' ||
-                              currentTheme.id === 'lavender' ||
-                              currentTheme.id === 'mint'
-                              ? `${currentTheme.colors.sub}30`  // More transparent for light themes
-                              : currentTheme.colors.sub         // Keep original for dark themes
+                            border: `1px solid ${currentTheme.colors.sub}40`,
                           }}
                         >
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 shrink-0 hover:opacity-80"
+                              className="h-7 w-7 shrink-0 mr-2 hover:opacity-80"
                               style={{
                                 color: currentTheme.colors.text
                               }}
@@ -1129,32 +1397,45 @@ function LinguaSlide() {
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </Button>
-                            <span className="text-base font-light tracking-wide">
-                              {word.word}
-                            </span>
-                            {word.skipped && (
-                              <span
-                                className="text-xs font-light italic tracking-wider"
-                                style={{ color: currentTheme.colors.text }}
-                              >
-                                (skipped)
-                              </span>
-                            )}
-                            {!word.skipped && word.spokenWord && (
-                              <span
-                                className="text-xs font-light italic tracking-wider truncate"
-                                style={{ color: currentTheme.colors.text }}
-                              >
-                                (you said: {word.spokenWord})
-                              </span>
-                            )}
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-medium tracking-wide">
+                                  {word.word}
+                                </span>
+                                {word.furigana && (
+                                  <span
+                                    className="text-xs font-light"
+                                    style={{ color: currentTheme.colors.sub }}
+                                  >
+                                    ({word.furigana})
+                                  </span>
+                                )}
+                                {needsPhonetic(selectedLanguage) && (
+                                  <span className="text-xs font-light tracking-wider">
+                                    {word.phonetic}
+                                  </span>
+                                )}
+                                {(selectedLanguage === 'ja' || selectedLanguage === 'tr' || selectedLanguage === 'es') && word.meaning && (
+                                  <span className="text-xs font-light tracking-wider opacity-80">
+                                    ({word.meaning})
+                                  </span>
+                                )}
+                                {word.skipped ? (
+                                  <span className="text-xs font-light italic">
+                                    (skipped)
+                                  </span>
+                                ) : word.spokenWord && (
+                                  <span className="text-xs font-light italic truncate">
+                                    (you said: {word.spokenWord})
+                                  </span>
+                                )}
+                                <span className="text-xs font-light shrink-0">
+                                  {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <span
-                            className="text-xs font-light shrink-0 ml-2"
-                            style={{ color: currentTheme.colors.text }}
-                          >
-                            {word.attempts} {word.attempts === 1 ? 'attempt' : 'attempts'}
-                          </span>
                         </div>
                       ))}
                   </div>
