@@ -53,7 +53,7 @@ const failureSound = failureSoundFile;
 type Difficulty = 'easy' | 'medium' | 'hard';
 type GameState = 'ready' | 'playing' | 'finished';
 type Timeout = ReturnType<typeof setTimeout>;
-type Language = 'en' | 'ja' | 'tr';
+type Language = 'en' | 'ja' | 'tr' | 'es';
 
 interface WordStatus {
   word: string;
@@ -109,6 +109,12 @@ const SUPPORTED_LANGUAGES: Record<Language, LanguageConfig> = {
     recognition: 'tr-TR',
     displayName: 'Türkçe',
   },
+  es: {
+    code: 'es',
+    name: 'Spanish',
+    recognition: 'es-ES',
+    displayName: 'Español',
+  },
 };
 
 import profanity from 'leo-profanity';
@@ -116,6 +122,7 @@ import wordData from '../data/words.json';
 import substitutionsData from '../data/substitutions.json';
 import wordDataJa from '../data/words_ja.json';
 import wordDataTr from '../data/words_tr.json';
+import wordDataSp from '../data/words_sp.json';
 
 // Add these helper functions at the top of your file
 const isMobileBrowser = () => {
@@ -196,6 +203,11 @@ const fetchJapaneseWords = async (difficulty: Difficulty): Promise<JapaneseWord[
     console.error('Error fetching Japanese words:', error);
     throw error;
   }
+};
+
+// Add a helper function to determine if a language needs phonetic display
+const needsPhonetic = (language: Language): boolean => {
+  return language === 'ja'; // Only Japanese needs phonetic for now
 };
 
 function LinguaSlide() {
@@ -322,8 +334,11 @@ function LinguaSlide() {
           return false;
         }
       } else {
-        // Get words for English and Turkish
-        const currentWordData = selectedLanguage === 'en' ? wordData : wordDataTr;
+        // Get words for English, Turkish, and Spanish
+        const currentWordData = 
+          selectedLanguage === 'en' ? wordData : 
+          selectedLanguage === 'tr' ? wordDataTr : 
+          wordDataSp;
         const allWords = currentWordData[difficulty];
         
         // Filter out previously used words
@@ -353,12 +368,13 @@ function LinguaSlide() {
         setUsedWords(newUsedWords);
 
         const initialWords = selectedWords.map((word, index) => ({
-          word,
-          phonetic: word.toLowerCase()
+          word: word.word || word, // Handle both object and string formats
+          phonetic: word.romaji || word.toLowerCase()
             .replace(/([aeiou])/g, '$1·')
             .split('')
             .join('‧')
             .replace(/‧$/,''),
+          meaning: word.meaning, // Add meaning
           completed: false,
           unlocked: index === 0,
           order: index,
@@ -1239,10 +1255,12 @@ function LinguaSlide() {
                           ({item.furigana})
                         </span>
                       )}
-                      <span className="text-xs font-light tracking-wider">
-                        {item.phonetic}
-                      </span>
-                      {selectedLanguage === 'ja' && item.meaning && (
+                      {needsPhonetic(selectedLanguage) && (
+                        <span className="text-xs font-light tracking-wider">
+                          {item.phonetic}
+                        </span>
+                      )}
+                      {(selectedLanguage === 'ja' || selectedLanguage === 'tr' || selectedLanguage === 'es') && item.meaning && (
                         <span className="text-xs font-light tracking-wider opacity-80">
                           ({item.meaning})
                         </span>
@@ -1394,10 +1412,20 @@ function LinguaSlide() {
                                 <span className="text-base font-medium tracking-wide">
                                   {word.word}
                                 </span>
-                                <span className="text-xs font-light tracking-wider">
-                                  {word.phonetic}
-                                </span>
-                                {selectedLanguage === 'ja' && word.meaning && (
+                                {word.furigana && (
+                                  <span
+                                    className="text-xs font-light"
+                                    style={{ color: currentTheme.colors.sub }}
+                                  >
+                                    ({word.furigana})
+                                  </span>
+                                )}
+                                {needsPhonetic(selectedLanguage) && (
+                                  <span className="text-xs font-light tracking-wider">
+                                    {word.phonetic}
+                                  </span>
+                                )}
+                                {(selectedLanguage === 'ja' || selectedLanguage === 'tr' || selectedLanguage === 'es') && word.meaning && (
                                   <span className="text-xs font-light tracking-wider opacity-80">
                                     ({word.meaning})
                                   </span>
