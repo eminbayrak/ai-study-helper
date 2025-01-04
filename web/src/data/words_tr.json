@@ -7,6 +7,722 @@
     {
       "word": "köpek",
       "meaning": "dog"
+    },
+    {
+      "word": "su",
+      "meaning": "water"
+    },
+    {
+      "word": "ekmek",
+      "meaning": "bread"
+    },
+    {
+      "word": "süt",
+      "meaning": "milk"
+    },
+    {
+      "word": "elma",
+      "meaning": "apple"
+    },
+    {
+      "word": "kitap",
+      "meaning": "book"
+    },
+    {
+      "word": "kalem",
+      "meaning": "pencil"
+    },
+    {
+      "word": "masa",
+      "meaning": "table"
+    },
+    {
+      "word": "sandalye",
+      "meaning": "chair"
+    },
+    {
+      "word": "çay",
+      "meaning": "tea"
+    },
+    {
+      "word": "kahve",
+      "meaning": "coffee"
+    },
+    {
+      "word": "pencere",
+      "meaning": "window"
+    },
+    {
+      "word": "kapı",
+      "meaning": "door"
+    },
+    {
+      "word": "yatak",
+      "meaning": "bed"
+    },
+    {
+      "word": "gün",
+      "meaning": "day"
+    },
+    {
+      "word": "gece",
+      "meaning": "night"
+    },
+    {
+      "word": "sabah",
+      "meaning": "morning"
+    },
+    {
+      "word": "akşam",
+      "meaning": "evening"
+    },
+    {
+      "word": "saat",
+      "meaning": "clock"
+    },
+    {
+      "word": "yemek",
+      "meaning": "food"
+    },
+    {
+      "word": "meyve",
+      "meaning": "fruit"
+    },
+    {
+      "word": "sebze",
+      "meaning": "vegetable"
+    },
+    {
+      "word": "et",
+      "meaning": "meat"
+    },
+    {
+      "word": "balık",
+      "meaning": "fish"
+    },
+    {
+      "word": "peynir",
+      "meaning": "cheese"
+    },
+    {
+      "word": "yumurta",
+      "meaning": "egg"
+    },
+    {
+      "word": "pirinç",
+      "meaning": "rice"
+    },
+    {
+      "word": "şeker",
+      "meaning": "sugar"
+    },
+    {
+      "word": "tuz",
+      "meaning": "salt"
+    },
+    {
+      "word": "portakal",
+      "meaning": "orange"
+    },
+    {
+      "word": "limon",
+      "meaning": "lemon"
+    },
+    {
+      "word": "domates",
+      "meaning": "tomato"
+    },
+    {
+      "word": "patates",
+      "meaning": "potato"
+    },
+    {
+      "word": "havuç",
+      "meaning": "carrot"
+    },
+    {
+      "word": "soğan",
+      "meaning": "onion"
+    },
+    {
+      "word": "sarımsak",
+      "meaning": "garlic"
+    },
+    {
+      "word": "biber",
+      "meaning": "pepper"
+    },
+    {
+      "word": "salata",
+      "meaning": "salad"
+    },
+    {
+      "word": "çorba",
+      "meaning": "soup"
+    },
+    {
+      "word": "bardak",
+      "meaning": "glass"
+    },
+    {
+      "word": "tabak",
+      "meaning": "plate"
+    },
+    {
+      "word": "çatal",
+      "meaning": "fork"
+    },
+    {
+      "word": "kaşık",
+      "meaning": "spoon"
+    },
+    {
+      "word": "bıçak",
+      "meaning": "knife"
+    },
+    {
+      "word": "tencere",
+      "meaning": "pot"
+    },
+    {
+      "word": "tava",
+      "meaning": "pan"
+    },
+    {
+      "word": "ocak",
+      "meaning": "stove"
+    },
+    {
+      "word": "buzdolabı",
+      "meaning": "refrigerator"
+    },
+    {
+      "word": "fırın",
+      "meaning": "oven"
+    },
+    {
+      "word": "gömlek",
+      "meaning": "shirt"
+    },
+    {
+      "word": "pantolon",
+      "meaning": "pants"
+    },
+    {
+      "word": "ayakkabı",
+      "meaning": "shoes"
+    },
+    {
+      "word": "çorap",
+      "meaning": "socks"
+    },
+    {
+      "word": "ceket",
+      "meaning": "jacket"
+    },
+    {
+      "word": "elbise",
+      "meaning": "dress"
+    },
+    {
+      "word": "şapka",
+      "meaning": "hat"
+    },
+    {
+      "word": "eldiven",
+      "meaning": "gloves"
+    },
+    {
+      "word": "kemer",
+      "meaning": "belt"
+    },
+    {
+      "word": "çanta",
+      "meaning": "bag"
+    }
+  ],
+  "medium": [
+    {
+      "word": "öğretmen",
+      "meaning": "teacher"
+    },
+    {
+      "word": "öğrenci",
+      "meaning": "student"
+    },
+    {
+      "word": "hastane",
+      "meaning": "hospital"
+    },
+    {
+      "word": "kütüphane",
+      "meaning": "library"
+    },
+    {
+      "word": "restoran",
+      "meaning": "restaurant"
+    },
+    {
+      "word": "bilgisayar",
+      "meaning": "computer"
+    },
+    {
+      "word": "telefon",
+      "meaning": "telephone"
+    },
+    {
+      "word": "otobüs",
+      "meaning": "bus"
+    },
+    {
+      "word": "havaalanı",
+      "meaning": "airport"
+    },
+    {
+      "word": "üniversite",
+      "meaning": "university"
+    },
+    {
+      "word": "mühendis",
+      "meaning": "engineer"
+    },
+    {
+      "word": "doktor",
+      "meaning": "doctor"
+    },
+    {
+      "word": "avukat",
+      "meaning": "lawyer"
+    },
+    {
+      "word": "muhasebeci",
+      "meaning": "accountant"
+    },
+    {
+      "word": "pazartesi",
+      "meaning": "Monday"
+    },
+    {
+      "word": "salı",
+      "meaning": "Tuesday"
+    },
+    {
+      "word": "çarşamba",
+      "meaning": "Wednesday"
+    },
+    {
+      "word": "perşembe",
+      "meaning": "Thursday"
+    },
+    {
+      "word": "cuma",
+      "meaning": "Friday"
+    },
+    {
+      "word": "cumartesi",
+      "meaning": "Saturday"
+    },
+    {
+      "word": "pazar",
+      "meaning": "Sunday"
+    },
+    {
+      "word": "ocak",
+      "meaning": "January"
+    },
+    {
+      "word": "şubat",
+      "meaning": "February"
+    },
+    {
+      "word": "mart",
+      "meaning": "March"
+    },
+    {
+      "word": "nisan",
+      "meaning": "April"
+    },
+    {
+      "word": "mayıs",
+      "meaning": "May"
+    },
+    {
+      "word": "haziran",
+      "meaning": "June"
+    },
+    {
+      "word": "temmuz",
+      "meaning": "July"
+    },
+    {
+      "word": "ağustos",
+      "meaning": "August"
+    },
+    {
+      "word": "eylül",
+      "meaning": "September"
+    },
+    {
+      "word": "ekim",
+      "meaning": "October"
+    },
+    {
+      "word": "kasım",
+      "meaning": "November"
+    },
+    {
+      "word": "aralık",
+      "meaning": "December"
+    },
+    {
+      "word": "mevsim",
+      "meaning": "season"
+    },
+    {
+      "word": "ilkbahar",
+      "meaning": "spring"
+    },
+    {
+      "word": "yaz",
+      "meaning": "summer"
+    },
+    {
+      "word": "sonbahar",
+      "meaning": "autumn"
+    },
+    {
+      "word": "kış",
+      "meaning": "winter"
+    },
+    {
+      "word": "yağmur",
+      "meaning": "rain"
+    },
+    {
+      "word": "kar",
+      "meaning": "snow"
+    },
+    {
+      "word": "güneş",
+      "meaning": "sun"
+    },
+    {
+      "word": "bulut",
+      "meaning": "cloud"
+    },
+    {
+      "word": "rüzgar",
+      "meaning": "wind"
+    },
+    {
+      "word": "fırtına",
+      "meaning": "storm"
+    },
+    {
+      "word": "şimşek",
+      "meaning": "lightning"
+    },
+    {
+      "word": "gök gürültüsü",
+      "meaning": "thunder"
+    },
+    {
+      "word": "gökkuşağı",
+      "meaning": "rainbow"
+    },
+    {
+      "word": "sis",
+      "meaning": "fog"
+    },
+    {
+      "word": "dolu",
+      "meaning": "hail"
+    },
+    {
+      "word": "buz",
+      "meaning": "ice"
+    },
+    {
+      "word": "dağ",
+      "meaning": "mountain"
+    },
+    {
+      "word": "deniz",
+      "meaning": "sea"
+    },
+    {
+      "word": "nehir",
+      "meaning": "river"
+    },
+    {
+      "word": "göl",
+      "meaning": "lake"
+    },
+    {
+      "word": "orman",
+      "meaning": "forest"
+    },
+    {
+      "word": "çöl",
+      "meaning": "desert"
+    },
+    {
+      "word": "ada",
+      "meaning": "island"
+    },
+    {
+      "word": "plaj",
+      "meaning": "beach"
+    },
+    {
+      "word": "vadi",
+      "meaning": "valley"
+    },
+    {
+      "word": "volkan",
+      "meaning": "volcano"
+    }
+  ],
+  "hard": [
+    {
+      "word": "sürdürülebilirlik",
+      "meaning": "sustainability"
+    },
+    {
+      "word": "küreselleşme",
+      "meaning": "globalization"
+    },
+    {
+      "word": "demokrasi",
+      "meaning": "democracy"
+    },
+    {
+      "word": "teknoloji",
+      "meaning": "technology"
+    },
+    {
+      "word": "psikoloji",
+      "meaning": "psychology"
+    },
+    {
+      "word": "mühendislik",
+      "meaning": "engineering"
+    },
+    {
+      "word": "ekonomi",
+      "meaning": "economy"
+    },
+    {
+      "word": "felsefe",
+      "meaning": "philosophy"
+    },
+    {
+      "word": "matematik",
+      "meaning": "mathematics"
+    },
+    {
+      "word": "biyoloji",
+      "meaning": "biology"
+    },
+    {
+      "word": "antropoloji",
+      "meaning": "anthropology"
+    },
+    {
+      "word": "sosyoloji",
+      "meaning": "sociology"
+    },
+    {
+      "word": "dilbilim",
+      "meaning": "linguistics"
+    },
+    {
+      "word": "jeoloji",
+      "meaning": "geology"
+    },
+    {
+      "word": "meteoroloji",
+      "meaning": "meteorology"
+    },
+    {
+      "word": "biyoteknoloji",
+      "meaning": "biotechnology"
+    },
+    {
+      "word": "nanoteknoloji",
+      "meaning": "nanotechnology"
+    },
+    {
+      "word": "epistemoloji",
+      "meaning": "epistemology"
+    },
+    {
+      "word": "metodoloji",
+      "meaning": "methodology"
+    },
+    {
+      "word": "paleontoloji",
+      "meaning": "paleontology"
+    },
+    {
+      "word": "kardiyoloji",
+      "meaning": "cardiology"
+    },
+    {
+      "word": "nöroloji",
+      "meaning": "neurology"
+    },
+    {
+      "word": "dermatoloji",
+      "meaning": "dermatology"
+    },
+    {
+      "word": "endokrinoloji",
+      "meaning": "endocrinology"
+    },
+    {
+      "word": "immünoloji",
+      "meaning": "immunology"
+    },
+    {
+      "word": "hematoloji",
+      "meaning": "hematology"
+    },
+    {
+      "word": "onkoloji",
+      "meaning": "oncology"
+    },
+    {
+      "word": "radyoloji",
+      "meaning": "radiology"
+    },
+    {
+      "word": "patoloji",
+      "meaning": "pathology"
+    },
+    {
+      "word": "farmakoloji",
+      "meaning": "pharmacology"
+    },
+    {
+      "word": "mikrobiyoloji",
+      "meaning": "microbiology"
+    },
+    {
+      "word": "biyokimya",
+      "meaning": "biochemistry"
+    },
+    {
+      "word": "fizyoloji",
+      "meaning": "physiology"
+    },
+    {
+      "word": "histoloji",
+      "meaning": "histology"
+    },
+    {
+      "word": "embriyoloji",
+      "meaning": "embryology"
+    },
+    {
+      "word": "sitoloji",
+      "meaning": "cytology"
+    },
+    {
+      "word": "viroloji",
+      "meaning": "virology"
+    },
+    {
+      "word": "parazitoloji",
+      "meaning": "parasitology"
+    },
+    {
+      "word": "toksikoloji",
+      "meaning": "toxicology"
+    },
+    {
+      "word": "epidemiyoloji",
+      "meaning": "epidemiology"
+    },
+    {
+      "word": "astrofizik",
+      "meaning": "astrophysics"
+    },
+    {
+      "word": "kozmoloji",
+      "meaning": "cosmology"
+    },
+    {
+      "word": "kuantum fiziği",
+      "meaning": "quantum physics"
+    },
+    {
+      "word": "termodinamik",
+      "meaning": "thermodynamics"
+    },
+    {
+      "word": "elektromanyetizma",
+      "meaning": "electromagnetism"
+    },
+    {
+      "word": "moleküler biyoloji",
+      "meaning": "molecular biology"
+    },
+    {
+      "word": "genetik mühendisliği",
+      "meaning": "genetic engineering"
+    },
+    {
+      "word": "yapay zeka",
+      "meaning": "artificial intelligence"
+    },
+    {
+      "word": "robotik",
+      "meaning": "robotics"
+    },
+    {
+      "word": "siber güvenlik",
+      "meaning": "cybersecurity"
+    },
+    {
+      "word": "veri madenciliği",
+      "meaning": "data mining"
+    },
+    {
+      "word": "makine öğrenimi",
+      "meaning": "machine learning"
+    },
+    {
+      "word": "derin öğrenme",
+      "meaning": "deep learning"
+    },
+    {
+      "word": "blok zinciri",
+      "meaning": "blockchain"
+    },
+    {
+      "word": "bulut bilişim",
+      "meaning": "cloud computing"
+    },
+    {
+      "word": "nesnelerin interneti",
+      "meaning": "internet of things"
+    },
+    {
+      "word": "sanal gerçeklik",
+      "meaning": "virtual reality"
+    },
+    {
+      "word": "artırılmış gerçeklik",
+      "meaning": "augmented reality"
+    },
+    {
+      "word": "kuantum hesaplama",
+      "meaning": "quantum computing"
+    },
+    {
+      "word": "biyoinformatik",
+      "meaning": "bioinformatics"
     }
   ]
 } 

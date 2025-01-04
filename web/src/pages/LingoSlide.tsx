@@ -29,18 +29,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Toaster } from "../components/ui/toaster";
 import { toast } from "../hooks/use-toast";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import substitutionsData from '../data/substitutions.json';
 
 // Assets
 import successSoundFile from '../assets/sounds/success.mp3';
@@ -68,6 +62,7 @@ interface WordStatus {
   currentAttemptIncorrect: boolean;
   inactivitySkip?: boolean;
   meaning?: string;
+  furigana?: string;
 }
 
 interface GameResult {
@@ -118,11 +113,6 @@ const SUPPORTED_LANGUAGES: Record<Language, LanguageConfig> = {
 };
 
 import profanity from 'leo-profanity';
-import wordData from '../data/words.json';
-import substitutionsData from '../data/substitutions.json';
-import wordDataJa from '../data/words_ja.json';
-import wordDataTr from '../data/words_tr.json';
-import wordDataSp from '../data/words_sp.json';
 
 // Add these helper functions at the top of your file
 const isMobileBrowser = () => {
@@ -133,81 +123,48 @@ const isSpeechRecognitionSupported = () => {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 };
 
-// Add these types
-interface JapaneseWord {
-  word: string;
-  meaning: string;
-  furigana: string;
-  romaji: string;
-  level: number;
-}
-
-interface JapaneseApiResponse {
-  total: number;
-  offset: number;
-  limit: number;
-  words: JapaneseWord[];
-}
-
-// Add this mapping
-const DIFFICULTY_LEVEL_MAP: Record<Difficulty, number> = {
-  easy: 5,
-  medium: 4,
-  hard: 3,
-};
-
-// Add function to fetch Japanese words
-const fetchJapaneseWords = async (difficulty: Difficulty): Promise<JapaneseWord[]> => {
-  try {
-    const level = DIFFICULTY_LEVEL_MAP[difficulty];
-    // Use smaller offsets to ensure we get data
-    const possibleOffsets = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
-    const randomOffset = possibleOffsets[Math.floor(Math.random() * possibleOffsets.length)];
-    
-    console.log(`Fetching Japanese words, offset: ${randomOffset}`);
-
-    const response = await fetch(
-      `https://jlpt-vocab-api.vercel.app/api/words?offset=${randomOffset}&limit=10`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch Japanese words');
-    }
-    
-    const data: JapaneseApiResponse = await response.json();
-    console.log('API Response:', data);
-
-    if (!data.words || data.words.length === 0) {
-      throw new Error('No words received from API');
-    }
-
-    // Filter words by level after getting response
-    const filteredWords = data.words
-      .filter(word => word.level === level)
-      .slice(0, 10);
-
-    if (filteredWords.length < 10) {
-      // If not enough words, try with offset 0
-      if (randomOffset !== 0) {
-        const fallbackResponse = await fetch(
-          `https://jlpt-vocab-api.vercel.app/api/words?offset=0&limit=10`
-        );
-        const fallbackData: JapaneseApiResponse = await fallbackResponse.json();
-        return fallbackData.words.filter(word => word.level === level).slice(0, 10);
-      }
-      throw new Error('Not enough words for selected difficulty level');
-    }
-
-    return filteredWords;
-  } catch (error) {
-    console.error('Error fetching Japanese words:', error);
-    throw error;
-  }
-};
-
 // Add a helper function to determine if a language needs phonetic display
 const needsPhonetic = (language: Language): boolean => {
   return language === 'ja'; // Only Japanese needs phonetic for now
+};
+
+interface WordData {
+  word: string;
+  meaning: string;
+  romaji?: string;
+  furigana?: string;
+}
+
+// Add type guard function
+const isWordData = (word: string | WordData): word is WordData => {
+  return typeof word !== 'string' && 'word' in word;
+};
+
+interface WordDataStructure {
+  easy: (WordData | string)[];
+  medium: (WordData | string)[];
+  hard: (WordData | string)[];
+}
+
+// Add dynamic import function
+const loadWordData = async (language: Language) => {
+  try {
+    switch (language) {
+      case 'en':
+        return (await import('../data/words.json')).default;
+      case 'ja':
+        return (await import('../data/words_ja.json')).default;
+      case 'tr':
+        return (await import('../data/words_tr.json')).default;
+      case 'es':
+        return (await import('../data/words_sp.json')).default;
+      default:
+        throw new Error('Unsupported language');
+    }
+  } catch (error) {
+    console.error('Error loading word data:', error);
+    throw error;
+  }
 };
 
 function LinguaSlide() {
@@ -228,7 +185,7 @@ function LinguaSlide() {
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+  const [usedWords, setUsedWords] = useState<Set<WordData | string>>(new Set());
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
 
   // Add gameStateRef to track current state in callbacks
@@ -267,24 +224,30 @@ function LinguaSlide() {
     });
   };
 
-  // Update fetchWords to use refs
+  // Update fetchWords to use dynamic loading
   const fetchWords = async () => {
     try {
       setIsLoading(true);
       setApiError(null);
 
+      // Load word data dynamically
+      const currentWordData = (await loadWordData(selectedLanguage)) as WordDataStructure;
+
+      // Add safety check
+      if (!currentWordData || !currentWordData[difficulty]) {
+        throw new Error(`No words available for ${difficulty} difficulty in ${selectedLanguage}`);
+      }
+
+      const allWords = currentWordData[difficulty];
+
       if (selectedLanguage === 'ja') {
         try {
-          // Get words from local JSON file based on difficulty
-          const allWords = wordDataJa[difficulty];
-          
           // Filter out previously used words
-          const availableWords = allWords.filter(word => {
-            // For easy level, only select words that have furigana
-            if (difficulty === 'easy') {
-              return !usedWords.has(word) && word.furigana;
+          const availableWords = allWords.filter((word: WordData | string) => {
+            if (typeof word === 'string') {
+              return !usedWords.has(word);
             }
-            return !usedWords.has(word);
+            return !usedWords.has(word) && (!difficulty || difficulty !== 'easy' || word.furigana);
           });
           
           // If we're running low on unused words, reset the used words
@@ -311,12 +274,11 @@ function LinguaSlide() {
           setUsedWords(newUsedWords);
 
           const initialWords = selectedWords.map((word, index) => ({
-            // For easy level, use hiragana (furigana). For others, use kanji (word)
-            word: difficulty === 'easy' ? word.furigana : word.word,
-            phonetic: word.romaji.toLowerCase(),
-            meaning: word.meaning,
-            // Show both kanji and hiragana for medium/hard levels
-            furigana: difficulty !== 'easy' ? word.furigana : undefined,
+            word: isWordData(word) ? word.word : String(word),
+            phonetic: isWordData(word) ? 
+              (word.romaji || word.word.toLowerCase()) : 
+              String(word).toLowerCase(),
+            meaning: isWordData(word) ? word.meaning : undefined,
             completed: false,
             unlocked: index === 0,
             order: index,
@@ -333,15 +295,13 @@ function LinguaSlide() {
           return false;
         }
       } else {
-        // Get words for English, Turkish, and Spanish
-        const currentWordData = 
-          selectedLanguage === 'en' ? wordData : 
-          selectedLanguage === 'tr' ? wordDataTr : 
-          wordDataSp;
-        const allWords = currentWordData[difficulty];
-        
         // Filter out previously used words
-        const availableWords = allWords.filter(word => !usedWords.has(word));
+        const availableWords = allWords.filter((word: WordData | string) => {
+          if (typeof word === 'string') {
+            return !usedWords.has(word);
+          }
+          return !usedWords.has(word) && (!difficulty || difficulty !== 'easy' || word.furigana);
+        });
         
         // If we're running low on unused words, reset the used words
         if (availableWords.length < 10) {
@@ -367,13 +327,11 @@ function LinguaSlide() {
         setUsedWords(newUsedWords);
 
         const initialWords = selectedWords.map((word, index) => ({
-          word: word.word || word, // Handle both object and string formats
-          phonetic: word.romaji || word.toLowerCase()
-            .replace(/([aeiou])/g, '$1·')
-            .split('')
-            .join('‧')
-            .replace(/‧$/,''),
-          meaning: word.meaning, // Add meaning
+          word: isWordData(word) ? word.word : String(word),
+          phonetic: isWordData(word) ? 
+            (word.romaji || word.word.toLowerCase()) : 
+            String(word).toLowerCase(),
+          meaning: isWordData(word) ? word.meaning : undefined,
           completed: false,
           unlocked: index === 0,
           order: index,
